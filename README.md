@@ -10,7 +10,7 @@ Authors: Chirag M Lakhani, Giacomo Cavalca, Anjing Liu, Rohan Nidumbur, Ru Feng,
 
 ## Overview
 
-scEEMS (single-cell Expression-mediated Effect Modeling System) is a CatBoost-based framework that predicts whether genetic variants are expression quantitative trait loci (eQTLs) in specific brain cell types. The model integrates variant-level genomic annotations (Enformer, ChromBPNet, GPN-MSA, conservation scores) with cell-type-specific regulatory features (ABC enhancer scores, transcription factor binding) to generate per-variant, per-gene, per-cell-type eQTL probabilities.
+scEEMS (single-cell Expression-mediated Effect Modeling System) is a CatBoost-based framework that predicts whether genetic variants are expression quantitative trait loci (eQTLs) in specific brain cell types. The model integrates variant-level genomic annotations (Enformer, ChromBPNet) with gene-level conservation features (GeneBayes gene conservation scores) and cell-type-specific regulatory features (ABC enhancer scores, transcription factor binding) to generate per-variant, per-gene, per-cell-type eQTL probabilities.
 
 These predictions are used for:
 - **LDSC partitioned heritability** analysis to quantify enrichment of Alzheimer's disease heritability
@@ -28,10 +28,10 @@ These predictions are used for:
 - **Core R packages**: susieR, tidyverse, readr, yaml, pecotmr
 - **External tools** (configured via `config.yaml`):
   - [bedtools](https://bedtools.readthedocs.io/) (v2.31.1)
-  - [MAGMA](https://ctg.cncr.nl/software/magma) (gene-set analysis binary)
-  - [PolyFun/LDSC](https://github.com/omerweisssbrod/polyfun) (LD score regression)
+  - [MAGMA](https://ctg.cncr.nl/software/magma) (gene-set analysis binary; de Leeuw et al., 2015, https://doi.org/10.1371/journal.pcbi.1004219; E-MAGMA extension: Gerring et al., 2021, https://doi.org/10.1093/bioinformatics/btab115)
+  - [PolyFun/LDSC](https://github.com/omerweisssbrod/polyfun) (LD score regression; Weissbrod et al., 2020, https://doi.org/10.1038/s41588-020-00735-5)
   - PLINK reference panel (for LD score computation)
-- **External data** (configured via `config.yaml`): Enformer/ChromBPNet/GPN-MSA variant effect predictions, ABC enhancer scores, baseline LD annotations, gnomAD MAF data, TF binding files, target lists
+- **External data** (configured via `config.yaml`): Enformer/ChromBPNet variant effect predictions, ABC enhancer scores, baseline LD annotations, gnomAD MAF data, TF binding files, GeneBayes gene conservation scores, target lists
 - **Synapse data for model training**: download required training/test inputs from the Synapse project and use those paths in `config.yaml` (see Additional Information).
 
 ### Versions Tested
@@ -49,7 +49,7 @@ The pipeline was run on the NYGC cluster with Ubuntu 22.04.5 LTS, Python 3.9.18,
 | Step | Directory | Description |
 |------|-----------|-------------|
 | 1 | `1_process_datasets/` | Internal preprocessing of raw fine-mapping RDS files (not publicly distributed) |
-| 2 | `2_annotate_variants/` | Annotate variants with genomic features (Enformer, ChromBPNet, GPN-MSA) |
+| 2 | `2_annotate_variants/` | Annotate variants with genomic features (Enformer, ChromBPNet) |
 | 3 | `3_cell_featurization/` | Create per-gene feature matrices with cell-type-specific annotations |
 | 4 | `4_create_training_data/` | Sample positive/negative training examples using PIP thresholds |
 | 5 | `5_model_training/` | Train CatBoost classifiers with leave-one-chromosome-out CV |
@@ -221,9 +221,9 @@ data_sources:
 Step 2 requires pre-computed variant effect predictions. See `2_annotate_variants/README.md` for details on obtaining:
 
 - **Enformer** variant effect predictions (Avsec et al., 2021)
-- **ChromBPNet** cell-type-specific accessibility predictions (Pampari et al., 2023)
-- **GPN-MSA** conservation scores (Benegas et al., 2023)
-- **Baseline LD annotations** (Gazal et al., 2017)
+- **ChromBPNet** cell-type-specific accessibility predictions (Pampari et al., 2025; https://doi.org/10.1101/2024.12.25.630221)
+- **GeneBayes** gene conservation scores (Zeng et al., 2024; https://doi.org/10.1038/s41588-024-01820-9)
+- **Baseline LD annotations** (Gazal et al., 2017; https://doi.org/10.1038/ng.3954)
 
 ## Cell Types
 

@@ -2,6 +2,10 @@
 
 This step runs MAGMA (Multi-marker Analysis of GenoMic Annotation) gene-set enrichment analysis using scEEMS predictions to define gene-variant associations.
 
+Method references:
+- MAGMA: de Leeuw CA, Mooij JM, Heskes T, Posthuma D. MAGMA: Generalized Gene-Set Analysis of GWAS Data. *PLoS Computational Biology*. 2015;11(4):e1004219. https://doi.org/10.1371/journal.pcbi.1004219
+- E-MAGMA: Gerring ZF, Mina-Vargas A, Gamazon ER, Derks EM. E-MAGMA: an eQTL-informed method to identify risk genes using genome-wide association study summary statistics. *Bioinformatics*. 2021;37(16):2245-2249. https://doi.org/10.1093/bioinformatics/btab115
+
 ## Overview
 
 1. **Prepare summary statistics** (`run_magma_analysis/make_MAGMA_sumstats*.py`): Format GWAS summary statistics for MAGMA input.
@@ -20,14 +24,18 @@ This step runs MAGMA (Multi-marker Analysis of GenoMic Annotation) gene-set enri
 
 | Dataset | Population | Script |
 |---------|-----------|--------|
-| Bellenguez et al. 2022 | EUR | `run_magma.sh` |
-| Kunkle et al. 2019 | EUR | `run_magma_kunkle.sh` |
-| Kunkle et al. 2019 | AFR | `run_magma_kunkle_AFR.sh` |
+| Bellenguez et al. 2022 (Nat Genet, https://doi.org/10.1038/s41588-022-01024-z) | EUR | `run_magma.sh` |
+| Kunkle et al. 2019 (Nat Genet, https://doi.org/10.1038/s41588-019-0358-2) | EUR | `run_magma_kunkle.sh` |
+| Kunkle et al. 2019 (Nat Genet, https://doi.org/10.1038/s41588-019-0358-2) | AFR | `run_magma_kunkle_AFR.sh` |
 | ADSP | AFR | `run_magma_ADSP_AFR.sh` |
 | ADSP | AMR | `run_magma_ADSP_AMR.sh` |
 | ADGC | AFR | `run_magma_ADGC_AFR.sh` |
 | ADGC | AMR | `run_magma_ADGC_AMR.sh` |
 | ADGC | EAS | `run_magma_ADGC_EAS.sh` |
+
+Bellenguez citation: Bellenguez C, Kucukali F, Jansen IE, et al. New insights into the genetic etiology of Alzheimer's disease and related dementias. *Nature Genetics*. 2022;54:412-436. https://doi.org/10.1038/s41588-022-01024-z
+
+Kunkle citation: Kunkle BW, Grenier-Boley B, Sims R, et al. Genetic meta-analysis of diagnosed Alzheimer's disease identifies new risk loci and implicates Abeta, tau, immunity and lipid processing. *Nature Genetics*. 2019;51:414-430. https://doi.org/10.1038/s41588-019-0358-2
 
 ## Prerequisites
 

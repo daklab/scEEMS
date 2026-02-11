@@ -21,15 +21,16 @@ The following pre-computed scores must be available before running this step:
 - Expected path: `{enformer_dir}/enformer_tensorflow_chr{N}.parquet`
 
 ### ChromBPNet Cell-Type-Specific Scores
-- Source: [Pampari et al., 2023](https://doi.org/10.1101/2023.11.27.568824)
+- Source: Pampari et al., *bioRxiv* preprint (2025), https://doi.org/10.1101/2024.12.25.630221
 - Used in Step 3 (cell featurization), not directly in this step
 - Scores for: microglia, astrocyte, oligodendrocyte, neuron
 
 ### BPNet Scores
 - Transcription factor binding predictions from BPNet models
 
-### GPN-MSA Conservation Scores
-- Multi-species alignment-based conservation scores
+### GeneBayes Gene Conservation Scores
+- Gene-level conservation scores used in final model training
+- Reference: Zeng et al., *Nature Genetics* (2024), https://doi.org/10.1038/s41588-024-01820-9
 
 ### Brain Epigenomic BED Files
 - ENCODE ATAC-seq peaks for brain cell types

@@ -9,6 +9,10 @@ This step creates LDSC-compatible annotations from scEEMS predictions and runs L
 3. **Run LDSC regression** (`ldscore_regression/ldscore_template*.py`): Run partitioned heritability analysis using PolyFun's `ldsc.py` to test enrichment of each annotation.
 4. **Aggregate results** (`ldscore_regression/aggregate_data.py`): Combine results across model variants and cell types.
 
+Method references:
+- Baseline LD annotations: Gazal et al., *Nature Genetics* (2017), https://doi.org/10.1038/ng.3954
+- PolyFun/LDSC framework: Weissbrod et al., *Nature Genetics* (2020), https://doi.org/10.1038/s41588-020-00735-5
+
 ## Model Variants
 
 | Variant | Annotation script | Predictions directory | Description |
