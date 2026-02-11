@@ -2,7 +2,11 @@
 
 **Version**: 1.0.0
 
-Code for the paper: *Machine learning-based prediction of cell-type-resolved brain eQTLs enhances discovery of variants explaining Alzheimer's disease heritability*
+Code for the paper: *Machine Learning-Based Prediction of Cell-type Resolved Brain eQTLs Enhances Discovery of Variants Explaining Alzheimer's Disease Heritability*
+
+Preprint (medRxiv): https://doi.org/10.64898/2025.12.03.25341562
+
+Authors: Chirag M Lakhani, Giacomo Cavalca, Anjing Liu, Rohan Nidumbur, Ru Feng, Towfique Raj, Philip De Jager, The Alzheimer's Disease Functional Genomics Consortium, Gao Wang, David A. Knowles
 
 ## Overview
 
@@ -37,7 +41,7 @@ The pipeline was run on the NYGC cluster with Ubuntu 22.04.5 LTS, Python 3.9.18,
 ### Hardware
 
 - **No GPU required** for the main pipeline.
-- **Full pipeline**: requires a high-memory multi-core environment. SLURM job scripts in `pipeline/` request **5–20 CPU cores** and **30–200 GB RAM** depending on step.
+- **Full pipeline**: requires a high-memory multi-core environment. Typical runs use **5–20 CPU cores** and **30–200 GB RAM** depending on step.
 - **Small-scale/demo runs**: can be executed on a standard desktop (8–32 GB RAM) by restricting to a single cell type and chromosome.
 
 ## Pipeline
@@ -114,69 +118,57 @@ python download_synapse_data.py --resource predictions
 
 By default files are downloaded to `{paths.data_dir}/synapse_public/`.
 
-## Demo
+## Minimal Training (Chromosome 2 Only)
 
-This demo runs **one cell type** (Microglia) and **one chromosome** (chr22) for model training (Step 5).
+This public demo runs **one cell type** (Microglia) and **one chromosome** (**chr2 only**) for model training (Step 5).
 
-### 1. Download demo data from Synapse
+### 1. Download chr2 demo files
 
-```bash
-pip install synapseclient
-synapse login  # authenticate with your Synapse account
-
-# Download Microglia training data
-synapse get -r syn72248802  # Mic_mega_eQTL training data
-
-# Download supporting files
-synapse get -r syn72248797  # columns_dict
-synapse get -r syn72248800  # gene_lof
-synapse get -r syn72248799  # gnomad_MAF
-```
+Use `5_model_training/README_minimal_chr2_demo.md` for:
+- exact required files
+- exact download URLs
+- parquet-directory setup (`part.*.parquet` files)
 
 ### 2. Configure paths
 
 ```bash
 cp config.yaml.example config.yaml
-# Edit config.yaml: set paths.data_dir to where you downloaded the Synapse data
+# Set:
+# - paths.data_dir to your demo root (with chr2 train/test parquet directories)
+# - paths.gnomad_maf_dir to where gnomad_MAF_chr2.tsv is stored
+# - paths.columns_dict_file to columns_dict.pkl
 ```
 
-### 3. Run the demo
+### 3. Run the chr2 demo
 
 ```bash
 cd 5_model_training
-python train_model.py Mic_mega_eQTL 22 \
-  --gene_lof_file "../data/41588_2024_1820_MOESM4_ESM.xlsx" \
-  --yaml_path data_params.yaml
+bash run_minimal_training.sh \
+  Mic_mega_eQTL \
+  2 \
+  "<AUX_ROOT>/41588_2024_1820_MOESM4_ESM.xlsx"
+```
+
+Equivalent direct command:
+
+```bash
+cd 5_model_training
+python train_model.py Mic_mega_eQTL 2 \
+  --gene_lof_file "<AUX_ROOT>/41588_2024_1820_MOESM4_ESM.xlsx" \
+  --yaml_path data_params.yaml \
+  --single_chromosome_demo
 ```
 
 ### Expected output
 
-- Model file: `{data_dir}/training_data/Mic_mega_eQTL/model_results/model_standard_subset_conservative_weighted_chr_22_NPR_10.joblib`
+- Model file: `{data_dir}/training_data/Mic_mega_eQTL/model_results/model_standard_subset_conservative_weighted_chr_chr2_NPR_10.joblib`
 - Feature importance CSVs
 - Test set predictions
 
 ### Expected runtime
 
 - **Normal desktop** (8–16 GB RAM, 4–8 cores): ~1–3 hours for a single chromosome (varies by data size).
-- **Cluster**: the SLURM job for this step requests 5 cores and 50 GB RAM with a 5-hour time limit (see `pipeline/5_model_training/run_jobs.sh`).
-
-## Minimal Training (Chromosome 2 Only)
-
-Minimal public training is **chr2-only** and uses a small subset of files.
-
-Important: the chr2 train/test parquet inputs are **directory datasets**, not single files.
-You must create:
-- `training_data/Mic_mega_eQTL/training_data/train_NPR_10_PIP_0.1_0.01/annotated_data_Mic_mega_eQTL_chr2.parquet/`
-- `training_data/Mic_mega_eQTL/training_data/test_NPR_10_PIP_0.9_0.01/annotated_data_Mic_mega_eQTL_chr2.parquet/`
-
-and download all `part.*.parquet` files into each directory.
-
-Use `5_model_training/README_minimal_chr2_demo.md` for:
-- exact required files
-- exact download URLs
-- folder layout
-- run commands
-- explicit parquet-directory setup instructions
+- **Cluster**: a typical run for this step uses about 5 CPU cores, 50 GB RAM, and up to 5 hours.
 
 For full multi-chromosome training, download the full Synapse `model_training` resource (`syn72248754`) and use the standard training workflow.
 
@@ -186,15 +178,18 @@ For full multi-chromosome training, download the full Synapse `model_training` r
 
 Each step can be run independently. See the `README.md` in each directory for specific instructions.
 
+Note: Step 1 uses internal raw inputs that are not publicly distributed.
+For public workflows, start from Synapse `model_training` / `predictions` data and run downstream steps.
+
 ```bash
-cd 1_process_datasets && bash run_pipeline.sh
-cd ../2_annotate_variants && bash run_pipeline.sh
+cd 5_model_training && bash run_pipeline.sh
+cd ../6_model_inference && bash run_pipeline.sh
 # ... and so on
 ```
 
 ### Cluster/HPC execution
 
-If you are running on a SLURM cluster, see the `run_jobs.sh` scripts under `pipeline/` for example resource requests and job arrays. These scripts are tailored to the NYGC environment and should be adapted (paths, partitions, time limits) for your cluster.
+If you are running on a SLURM cluster, use the `run_jobs.sh` scripts provided in step directories where available and adapt resource requests (paths, partitions, and time limits) to your environment.
 
 ## (Optional) Reproduction Instructions
 
@@ -334,8 +329,8 @@ If you use this code, please cite:
 
 ```
 @article{scEEMS2024,
-  title={Machine learning-based prediction of cell-type-resolved brain eQTLs enhances discovery of variants explaining Alzheimer's disease heritability},
-  author={...},
+  title={Machine Learning-Based Prediction of Cell-type Resolved Brain eQTLs Enhances Discovery of Variants Explaining Alzheimer's Disease Heritability},
+  author={Lakhani, Chirag M and Cavalca, Giacomo and Liu, Anjing and Nidumbur, Rohan and Feng, Ru and Raj, Towfique and De Jager, Philip and The Alzheimer's Disease Functional Genomics Consortium and Wang, Gao and Knowles, David A.},
   journal={...},
   year={2024}
 }
