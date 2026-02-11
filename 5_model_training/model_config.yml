@@ -1,0 +1,20 @@
+# Model Configuration for scEEMS CatBoost Classifier
+
+# Conservative weighted parameters (used for final inference)
+model_params:
+  depth: 5
+  iterations: 1000
+  learning_rate: 0.03
+  l2_leaf_reg: 5.0
+  min_data_in_leaf: 10
+  bagging_temperature: 1.0
+  leaf_estimation_method: Newton
+  leaf_estimation_iterations: 10
+
+feature_weights:
+  default_weight: 1.0
+  high_importance_weight: 10.0
+  high_importance_categories:
+    - chrombpnet_positive
+    - tf_positive
+    - diff

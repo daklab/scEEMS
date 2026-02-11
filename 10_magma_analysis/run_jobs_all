@@ -1,0 +1,14 @@
+#!/bin/bash
+# Submit MAGMA file generation jobs for all cell types
+
+CELL_TYPES=("Mic_mega_eQTL" "Ast_mega_eQTL" "Exc_mega_eQTL" "Inh_mega_eQTL" "Oli_mega_eQTL" "OPC_mega_eQTL")
+
+# Revised model
+for ct in "${CELL_TYPES[@]}"; do
+    sbatch --export=cell_type=${ct} run_jobs.sh
+done
+
+# KNN model
+for ct in "${CELL_TYPES[@]}"; do
+    sbatch --export=cell_type=${ct} run_jobs_knn.sh
+done

@@ -1,0 +1,60 @@
+# scEEMS Configuration
+# Copy this file to config.yaml and fill in your values.
+# config.yaml is gitignored and will not be committed.
+
+paths:
+  data_dir: "/path/to/data"
+  output_dir: "/path/to/output"
+  scratch_dir: "/tmp"
+
+  # External annotation files
+  bed_annotations_dir: "/path/to/annotations_hg38/brain_all"
+  baseline_annotations_dir: "/path/to/annotations_hg38/baseline"
+  abc_data_dir: "/path/to/ABC_data"
+  enformer_dir: "/path/to/enformer_annotation_combined/parquet_combined"
+  chrombpnet_dir: "/path/to/chrombpnet/variant_list_scored"
+  tf_file: "/path/to/TF.tsv"
+  targets_file: "/path/to/targets_human.txt"
+  gene_lof_file: "/path/to/41588_2024_1820_MOESM4_ESM.xlsx"
+  gnomad_maf_dir: "/path/to/gnomad"
+  columns_dict_file: "/path/to/columns_dict.pkl"
+
+  # PLACseq interaction data
+  placseq_file: "/path/to/placseq_interactions_hg38.tsv"
+
+  # Multi-ancestry variant predictions (for MAGMA)
+  multi_ancestry_predictions_dir: "/path/to/variant_list_other_ethnicity/MAGMA_predictions"
+
+  # LDSC paths
+  ldsc_dir: "/path/to/polyfun"           # PolyFun installation directory (contains ldsc.py, compute_ldscores.py)
+  baseline_annot_dir: "/path/to/baseline_filtered"
+  sumstats_file: "/path/to/sumstats.parquet"
+  weights_dir: "/path/to/weights"
+  ldsc_results_dir: "/path/to/ldsc_results"
+
+  # MAGMA paths
+  magma_dir: "/path/to/eMAGMA"           # Directory containing MAGMA binary and support files
+  magma_binary: "/path/to/magma"
+  plink_ref_dir: "/path/to/plink_reference"
+  magma_sumstats: "/path/to/magma_sumstats.txt"
+  gene_info_file: "/path/to/Homo_sapiens.gene_info.gz"
+  adgc_sumstats_dir: "/path/to/ADGC"     # ADGC multi-ancestry summary statistics
+
+  # Fine-mapping paths
+  genotype_dir: "/path/to/genotype"
+  fine_mapping_dir: "/path/to/fine_mapping_new_priors"
+
+credentials:
+  synapse_token: ""     # Set your Synapse personal access token
+
+data_sources:
+  model_training_synapse_id: "syn72248754"
+  predictions_synapse_id: "syn71338354"
+
+cell_types:
+  - Ast_mega_eQTL
+  - Exc_mega_eQTL
+  - Inh_mega_eQTL
+  - Mic_mega_eQTL
+  - Oli_mega_eQTL
+  - OPC_mega_eQTL

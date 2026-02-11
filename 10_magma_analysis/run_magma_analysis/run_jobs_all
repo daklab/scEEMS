@@ -1,0 +1,75 @@
+#!/bin/bash
+# Batch submission script for all MAGMA analyses across cell types.
+# Run this from the directory containing the run_magma_*.sh scripts.
+
+# --- Bellenguez (EUR) ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma.sh
+
+# --- Kunkle (EUR) ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_kunkle.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_kunkle.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_kunkle.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_kunkle.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_kunkle.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_kunkle.sh
+
+# --- Kunkle AFR ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_kunkle_AFR.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_kunkle_AFR.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_kunkle_AFR.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_kunkle_AFR.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_kunkle_AFR.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_kunkle_AFR.sh
+
+# --- ADSP AFR ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_ADSP_AFR.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_ADSP_AFR.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_ADSP_AFR.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_ADSP_AFR.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_ADSP_AFR.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_ADSP_AFR.sh
+
+# --- ADSP AMR ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_ADSP_AMR.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_ADSP_AMR.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_ADSP_AMR.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_ADSP_AMR.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_ADSP_AMR.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_ADSP_AMR.sh
+
+# --- KNN (Bellenguez EUR) ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_knn.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_knn.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_knn.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_knn.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_knn.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_knn.sh
+
+# --- ADGC AFR ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_ADGC_AFR.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_ADGC_AFR.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_ADGC_AFR.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_ADGC_AFR.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_ADGC_AFR.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_ADGC_AFR.sh
+
+# --- ADGC AMR ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_ADGC_AMR.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_ADGC_AMR.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_ADGC_AMR.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_ADGC_AMR.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_ADGC_AMR.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_ADGC_AMR.sh
+
+# --- ADGC EAS ---
+sbatch --export=cell_type=Mic_mega_eQTL run_magma_ADGC_EAS.sh
+sbatch --export=cell_type=Ast_mega_eQTL run_magma_ADGC_EAS.sh
+sbatch --export=cell_type=Exc_mega_eQTL run_magma_ADGC_EAS.sh
+sbatch --export=cell_type=Inh_mega_eQTL run_magma_ADGC_EAS.sh
+sbatch --export=cell_type=Oli_mega_eQTL run_magma_ADGC_EAS.sh
+sbatch --export=cell_type=OPC_mega_eQTL run_magma_ADGC_EAS.sh
