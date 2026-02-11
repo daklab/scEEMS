@@ -327,12 +327,14 @@ Raw Step 1 fine-mapping RDS files are not publicly distributed in this repositor
 
 If you use this code, please cite:
 
-```
-@article{scEEMS2024,
+```bibtex
+@article{lakhani2025sceems,
   title={Machine Learning-Based Prediction of Cell-type Resolved Brain eQTLs Enhances Discovery of Variants Explaining Alzheimer's Disease Heritability},
   author={Lakhani, Chirag M and Cavalca, Giacomo and Liu, Anjing and Nidumbur, Rohan and Feng, Ru and Raj, Towfique and De Jager, Philip and The Alzheimer's Disease Functional Genomics Consortium and Wang, Gao and Knowles, David A.},
-  journal={...},
-  year={2024}
+  journal={medRxiv},
+  year={2025},
+  doi={10.64898/2025.12.03.25341562},
+  url={https://doi.org/10.64898/2025.12.03.25341562}
 }
 ```
 
