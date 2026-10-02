@@ -1,199 +1,119 @@
+#!/usr/bin/env python
 """
-Compute SHAP values for high-confidence predictions.
+TreeSHAP attribution of the scEEMS (weighted_full) model for one cell type and one chromosome, summed
+over feature categories.
 
-Computes TreeSHAP explanations for variants with high prediction probabilities,
-split into enhancer (>10kb from TSS) and promoter (<=10kb from TSS) categories.
+Variants explained: the model's predicted eQTLs on the chromosome, i.e. variant-gene pairs with pred_prob
+above the cell type's tau* (the threshold selected by the S-LDSC analysis of step 9, read from
+tau_star.json). Each chromosome is explained by the LOCO model that held it out, so the attributions
+describe out-of-fold predictions, as in training and evaluation.
 
-Usage:
-    python shap_analysis.py <cohort> <chromosome>
+Features are rebuilt exactly as the model was trained (shared/featurize.py with the columns of
+feature_cols.pkl). The |SHAP| of each variant is summed within 11 categories that partition the 4,840
+features: ABC, CRE, chromBPNet, Enformer, TF, abs_gpn (GPN-STAR), gene_lof, variant_type, baseline,
+distance, gnomad_MAF. Variants are split into promoter-like (|distance to TSS| <= 10 kb) and
+enhancer-like (> 10 kb).
 
-Arguments:
-    cohort: Cell type cohort (e.g., Mic_mega_eQTL)
-    chromosome: Chromosome number (1-22)
-
-Requires config.yaml with paths configured.
+usage:   python shap_analysis.py COHORT CHR            (CHR: 1-22)
+output:  {shap_dir}/shap_category_chr{CHR}.parquet: variant_id, gene_id, distance_TSS, region, tau_star,
+         and one summed |SHAP| column per category
 """
-
+import json
 import os
-import sys
-import pandas as pd
-import numpy as np
-from dask import dataframe as dd
-from dask.diagnostics import ProgressBar
-from tqdm import tqdm
-from os import walk
 import pickle
-import yaml
+import sys
+
 import joblib
-import shap
-import dask
+import numpy as np
+import pandas as pd
+import pyarrow.dataset as ds
+from catboost import Pool
 
-ProgressBar().register()
-tqdm.pandas()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+import featurize as F
+from config import cohort_name, path
 
-np.random.seed(9448)
+cohort = cohort_name(sys.argv[1])
+c = f"chr{int(sys.argv[2])}"
+ENH_THRESH = 10000                      # |distance_TSS| > 10 kb = enhancer-like
+CAT_ORDER = ["ABC", "CRE", "chromBPNet", "Enformer", "TF", "abs_gpn",
+             "gene_lof", "variant_type", "baseline", "distance", "gnomad_MAF"]
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
+with open(f"{path('aggregate_dir')}/tau_star.json") as fh:
+    PRED_THRESH = json.load(fh)[cohort]
+MDIR = path("model_dir", cohort=cohort)
+PRED = f"{path('predictions_parquet_dir', cohort=cohort)}/weighted_full/predictions.parquet"
+VAR = path("all_variants_dir", cohort=cohort)
+MODEL = f"{MDIR}/weighted_full_{c}.joblib"
+OUT_DIR = path("shap_dir", cohort=cohort)
+for p in (PRED, MODEL, f"{MDIR}/feature_cols.pkl"):
+    if not os.path.exists(p):
+        sys.exit(f"missing input: {p}")
+os.makedirs(OUT_DIR, exist_ok=True)
 
-data_dir = config['paths']['data_dir']
-scratch_dir = config['paths'].get('scratch_dir', '/tmp')
-dask.config.set({'temporary_directory': scratch_dir})
+# predicted eQTLs on this chromosome (chr is the partition key of the prediction dataset)
+preds = ds.dataset(PRED, partitioning="hive").to_table(
+    columns=["variant_id", "gene_id", "pred_prob"],
+    filter=(ds.field("chr") == c) & (ds.field("pred_prob") > PRED_THRESH)).to_pandas()
+if preds.empty:
+    sys.exit(f"[{cohort} {c}] no variants with pred_prob > {PRED_THRESH}")
+print(f"[{cohort} {c}] predicted eQTLs (pred_prob > {PRED_THRESH}): {len(preds):,} over "
+      f"{preds.gene_id.nunique():,} genes", flush=True)
 
-params_data = yaml.safe_load(open('../5_model_training/data_params.yaml'))
+# the trained feature matrix for exactly these variant-gene pairs, one gene at a time
+with open(f"{MDIR}/feature_cols.pkl", "rb") as fh:
+    fc = pickle.load(fh)
+cols, abscols, FEATS = fc["cols"], fc["abscols"], fc["FEATS"]
+aux = F.load_aux(maf_chrom=c)
+gpn = F.load_gpn_map(chrom=c)
+Xs, metas = [], []
+for gene_id, grp in preds.groupby("gene_id", sort=False):
+    gpath = f"{VAR}/{gene_id}"
+    if not os.path.exists(gpath):
+        print(f"  skip {gene_id}: no all_variants table", flush=True)
+        continue
+    try:
+        df = F.load_gene_variants(gpath, gene_id, aux)
+    except Exception as e:              # unreadable (e.g. truncated) table
+        print(f"  skip {gene_id}: unreadable ({type(e).__name__})", flush=True)
+        continue
+    df = df.merge(grp[["variant_id"]], on="variant_id", how="inner")
+    if df.empty:
+        continue
+    X, _, _, _ = F.build_X(df, aux["column_dict"], gpn, cols=cols, abscols=abscols)
+    Xs.append(X)
+    metas.append(df[["variant_id", "gene_id", "distance_TSS"]])
+if not Xs:
+    sys.exit(f"[{cohort} {c}] no variants could be featurized")
+X = pd.concat(Xs, ignore_index=True)[FEATS]
+meta = pd.concat(metas, ignore_index=True).reset_index(drop=True)
+del Xs, metas
+print(f"[{cohort} {c}] feature matrix {X.shape[0]:,} x {X.shape[1]:,}", flush=True)
 
-cohort = sys.argv[1]
-chr_num = int(sys.argv[2])
-chromosome_out = f'chr{chr_num}'
+# TreeSHAP with the LOCO model that held out this chromosome
+clf = joblib.load(MODEL)
+assert list(clf.feature_names_) == list(FEATS), "feature order differs from the model's"
+sv = clf.get_feature_importance(Pool(X), type="ShapValues")[:, :-1]     # drop the expected-value column
+np.abs(sv, out=sv)
 
-pred_prob_filter = 0.95
-NPR_tr = 10
+# the 8 weighted categories plus baseline, distance and gnomad_MAF partition the features exactly
+f2c = F.category_map(FEATS, aux["column_dict"])
+base = set(aux["column_dict"].get("baseline", []))
+dist = set(aux["column_dict"].get("distance", []))
+for f in FEATS:
+    if f not in f2c:
+        f2c[f] = "gnomad_MAF" if f == "gnomad_MAF" else "baseline" if f in base else "distance" if f in dist else "other"
+unassigned = [f for f in FEATS if f2c[f] == "other"]
+assert not unassigned, f"{len(unassigned)} features outside every category: {unassigned[:10]}"
+idx = {cat: [i for i, f in enumerate(FEATS) if f2c[f] == cat] for cat in CAT_ORDER}
+assert sum(len(v) for v in idx.values()) == len(FEATS), "categories do not partition the features"
 
-training_data_dir = os.path.join(data_dir, f'training_data/{cohort}')
-write_dir = os.path.join(training_data_dir, 'model_results')
-variant_dir = os.path.join(training_data_dir, 'all_variants')
-
-# Load column dictionary
-columns_dict_file = config['paths']['columns_dict_file']
-with open(columns_dict_file, 'rb') as f:
-    column_dict = pickle.load(f)
-
-
-def make_variant_features(df):
-    """Extract variant type features from variant_id."""
-    df[['chr', 'pos', 'ref', 'alt']] = df['variant_id'].str.split(':', expand=True)
-    df['length_diff'] = df['ref'].str.len() - df['alt'].str.len()
-    df['is_SNP'] = df['length_diff'].apply(lambda x: 1 if x == 0 else 0)
-    df['is_indel'] = df['length_diff'].apply(lambda x: 1 if x != 0 else 0)
-    df['is_insertion'] = df['length_diff'].apply(lambda x: 1 if x < 0 else 0)
-    df['is_deletion'] = df['length_diff'].apply(lambda x: 1 if x > 0 else 0)
-    df.drop(columns=['chr', 'pos', 'ref', 'alt'], inplace=True, errors='ignore')
-    return df
-
-
-# Load predictions and filter to high-confidence
-predictions_df = dd.read_parquet(
-    os.path.join(training_data_dir, 'predictions_parquet_catboost/predictions.parquet'))
-predictions_df = predictions_df[predictions_df['chr'] == chromosome_out]
-predictions_df = predictions_df[predictions_df['pred_prob'] > pred_prob_filter]
-predictions_df = predictions_df.compute()
-
-# Load auxiliary data
-gene_lof_file = config['paths']['gene_lof_file']
-gene_lof_df = pd.read_excel(gene_lof_file, "Supplementary Table 1")
-gene_lof_df = gene_lof_df[['ensg', 'post_mean']]
-gene_lof_df = gene_lof_df.rename(columns={'ensg': 'gene_id', 'post_mean': 'gene_lof'})
-gene_lof_df['gene_lof'] = np.log2(gene_lof_df['gene_lof'])
-
-gnomad_dir = config['paths']['gnomad_maf_dir']
-maf_df = dd.read_csv(os.path.join(gnomad_dir, f'gnomad_MAF_{chromosome_out}.tsv'), sep='\t')
-maf_df = maf_df[['variant_id', 'gnomad_MAF']].compute()
-
-# Load training data for feature alignment
-chromosomes = [f'chr{x}' for x in range(1, 23)]
-train_chromosomes = [x for x in chromosomes if x != chromosome_out]
-
-train_files = []
-for i in train_chromosomes:
-    dir_path = os.path.join(training_data_dir,
-        f'training_data/train_NPR_{NPR_tr}_PIP_{params_data["train"]["positive_class_threshold"]}'
-        f'_{params_data["train"]["negative_class_threshold"]}/annotated_data_{cohort}_{i}.parquet')
-    for (dirpath, dirnames, filenames) in walk(dir_path):
-        for file in filenames:
-            train_files.append(os.path.join(dir_path, file))
-
-train_df = dd.read_parquet(train_files, engine='pyarrow').compute()
-train_df = make_variant_features(train_df)
-train_df = train_df.merge(gene_lof_df, on='gene_id', how='left')
-train_df = train_df.merge(maf_df, on='variant_id', how='left')
-train_df['gene_lof'] = train_df['gene_lof'].fillna(train_df['gene_lof'].median())
-train_df['gnomad_MAF'] = train_df['gnomad_MAF'].fillna(train_df['gnomad_MAF'].median())
-
-meta_data = ['variant_id', 'pip', 'CHR', 'BP', 'REF', 'ALT', 'SNP', 'label', 'weight']
-X_train = train_df.drop(columns=meta_data, errors='ignore').replace([np.inf, -np.inf], 0).fillna(0)
-if 'gene_id' in X_train.columns:
-    X_train = X_train.drop(columns=['gene_id'])
-
-subset_keys = ['distance', 'ABC', 'celltype', 'baseline', 'chrombpnet_positive', 'diff', 'tf_positive']
-subset_cols = []
-for key in subset_keys:
-    if key in column_dict:
-        subset_cols.extend(column_dict[key])
-subset_cols = [col for col in subset_cols if col in X_train.columns]
-
-variant_features_list = ['length_diff', 'is_SNP', 'is_indel', 'is_insertion', 'is_deletion', 'gene_lof', 'gnomad_MAF']
-for feature in variant_features_list:
-    if feature in X_train.columns and feature not in subset_cols:
-        subset_cols.append(feature)
-
-columns_to_abs = []
-for key in ['diff', 'tf_positive', 'chrombpnet_positive']:
-    if key in column_dict:
-        columns_to_abs.extend([col for col in column_dict[key] if col in X_train.columns])
-
-X_train_subset = X_train[subset_cols].copy()
-for col in columns_to_abs:
-    if col in X_train_subset.columns:
-        X_train_subset[col] = X_train_subset[col].abs()
-
-columns_to_drop = ['abs_distance_TSS', 'distance_TSS']
-X_train_subset = X_train_subset.drop(columns=columns_to_drop, errors='ignore')
-
-# Process high-confidence variants
-gene_id_list = predictions_df['gene_id'].unique()
-high_pip_df = predictions_df[['variant_id', 'gene_id']].copy(deep=True)
-
-variant_features_combined = []
-variant_distance_combined = []
-
-for gene_id in tqdm(gene_id_list):
-    variant_df = pd.read_parquet(os.path.join(variant_dir, gene_id))
-    variant_df = variant_df.reset_index(drop=True)
-    variant_df['gene_id'] = gene_id
-    variant_df = make_variant_features(variant_df)
-    variant_df = pd.merge(variant_df, gene_lof_df, on='gene_id', how='left')
-    variant_df = pd.merge(variant_df, maf_df, on='variant_id', how='left')
-    variant_df = variant_df.merge(high_pip_df, on=['gene_id', 'variant_id'], how='inner')
-    variant_df['gene_lof'] = variant_df['gene_lof'].fillna(variant_df['gene_lof'].median())
-    variant_df['gnomad_MAF'] = variant_df['gnomad_MAF'].fillna(variant_df['gnomad_MAF'].median())
-
-    variant_distance_df = variant_df[['variant_id', 'distance_TSS']]
-    variant_features_df = variant_df[subset_cols].copy()
-    for col in columns_to_abs:
-        if col in variant_features_df.columns:
-            variant_features_df[col] = variant_features_df[col].abs()
-    variant_features_df = variant_features_df.drop(columns=columns_to_drop, errors='ignore')
-    variant_features_df = variant_features_df.reindex(columns=X_train_subset.columns)
-
-    variant_features_combined.append(variant_features_df)
-    variant_distance_combined.append(variant_distance_df)
-
-variant_features_all = pd.concat(variant_features_combined, axis=0)
-variant_distance_all = pd.concat(variant_distance_combined, axis=0).reset_index(drop=True)
-
-# Compute SHAP values
-from catboost import CatBoostClassifier
-
-model_file = os.path.join(write_dir,
-    f'model_standard_subset_conservative_weighted_chr_{chromosome_out}_NPR_10.joblib')
-model = joblib.load(model_file)
-
-explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(variant_features_all)
-shap_values_df = pd.DataFrame(shap_values, columns=variant_features_all.columns).reset_index(drop=True)
-
-variant_info_df_shap = pd.concat([variant_distance_all, shap_values_df], axis=1)
-
-# Split by enhancer/promoter
-enhancer_threshold = 10000
-enhancer_shap = variant_info_df_shap[np.abs(variant_info_df_shap['distance_TSS']) > enhancer_threshold]
-promoter_shap = variant_info_df_shap[np.abs(variant_info_df_shap['distance_TSS']) <= enhancer_threshold]
-
-# Save
-shap_dir = os.path.join(write_dir, 'shap_values')
-os.makedirs(shap_dir, exist_ok=True)
-enhancer_shap.to_csv(os.path.join(shap_dir, f'enhancer_shap_values_{chromosome_out}.csv'), index=False)
-promoter_shap.to_csv(os.path.join(shap_dir, f'promoter_shap_values_{chromosome_out}.csv'), index=False)
-
-print(f"SHAP analysis complete for {cohort} {chromosome_out}")
+out = meta.copy()
+out["region"] = np.where(np.abs(out["distance_TSS"]) > ENH_THRESH, "enhancer", "promoter")
+out["tau_star"] = PRED_THRESH
+for cat in CAT_ORDER:
+    out[cat] = sv[:, idx[cat]].sum(axis=1)
+out.to_parquet(f"{OUT_DIR}/shap_category_{c}.parquet", index=False)
+n_enh = int((out.region == "enhancer").sum())
+print(f"[{cohort} {c}] enhancer-like {n_enh:,} | promoter-like {len(out) - n_enh:,} -> "
+      f"{OUT_DIR}/shap_category_{c}.parquet", flush=True)

@@ -9,7 +9,8 @@ Usage:
 
 Arguments:
     chr_num: Chromosome number (1-22)
-    data_split: "train" or "test"
+    data_split: "train", "test" or "train_restricted" (positives with PIP > 0.9 in a 95% credible
+                set; training data of the Weighted (Restricted) comparison model)
     cohort: Cell type cohort (e.g., Mic_mega_eQTL)
     NPR: Number of negative samples per positive variant
 
@@ -75,6 +76,11 @@ elif data_split == 'train':
         high_pip_genes, on=['gene_id', 'cs_coverage_0.95'], how='inner')
     covered_variants = covered_variants[covered_variants['pip'] > 0.05]
     top_pip_df = dd.concat([covered_variants, high_pip_no_coverage])
+elif data_split == 'train_restricted':
+    top_pip_df = top_pip_df_initial[
+        (top_pip_df_initial['pip'] > pip_threshold_positive) &
+        (top_pip_df_initial['cs_coverage_0.95'] >= 1)
+    ]
 
 # Filter by chromosome
 top_pip_df = top_pip_df[
@@ -93,6 +99,12 @@ top_pip_df_annotated = top_pip_df.merge(
 ).compute().reset_index()
 
 positive_variants = top_pip_df_annotated[['variant_id', 'chr', 'pos', 'ref', 'alt', 'gene_id', 'pip']]
+
+# Small cell type x chromosome combinations can have no positives under the strict splits (e.g. microglia
+# chr21 for test and train_restricted); write nothing, which training treats as a missing chromosome.
+if positive_variants.empty:
+    print(f"No {data_split} positives for {cohort} chr{chr_num}; no file written.")
+    sys.exit(0)
 
 
 def get_variant_type(ref, alt):

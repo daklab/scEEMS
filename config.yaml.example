@@ -1,60 +1,89 @@
-# scEEMS Configuration
-# Copy this file to config.yaml and fill in your values.
-# config.yaml is gitignored and will not be committed.
+# scEEMS configuration. Copy to config.yaml (gitignored) and set the paths you need, or point the
+# SCEEMS_CONFIG environment variable at another file.
+#
+# Path settings are templates that may refer to {data_dir}, {release_dir}, {output_dir}, other path
+# settings (e.g. {aggregate_dir}) and, where a path depends on the cell type, {cohort} (e.g.
+# Mic_mega_eQTL). Settings left out take the defaults of shared/config.py, listed at the end.
+# Steps 5 and 7 need only release_dir and output_dir.
 
 paths:
-  data_dir: "/path/to/data"
-  output_dir: "/path/to/output"
-  scratch_dir: "/tmp"
+  # ---- base directories ----
+  release_dir: "/path/to/scEEMS_data"      # data release from Synapse: model_training/, predictions/, fine_mapping/
+  output_dir: "/path/to/output"            # everything steps 5-12 write
+  data_dir: "/path/to/data"                # inputs and outputs of steps 1-4
+  scratch_dir: "/path/to/scratch"          # temporary files (steps 1-4 and dask)
 
-  # External annotation files
+  # ---- steps 2-4: annotation inputs (see each step's README) ----
   bed_annotations_dir: "/path/to/annotations_hg38/brain_all"
   baseline_annotations_dir: "/path/to/annotations_hg38/baseline"
   abc_data_dir: "/path/to/ABC_data"
-  enformer_dir: "/path/to/enformer_annotation_combined/parquet_combined"
+  enformer_dir: "/path/to/enformer"
   chrombpnet_dir: "/path/to/chrombpnet/variant_list_scored"
   tf_file: "/path/to/TF.tsv"
   targets_file: "/path/to/targets_human.txt"
-  gene_lof_file: "/path/to/41588_2024_1820_MOESM4_ESM.xlsx"
-  gnomad_maf_dir: "/path/to/gnomad"
-  columns_dict_file: "/path/to/columns_dict.pkl"
 
-  # PLACseq interaction data
+  # ---- step 9: S-LDSC (also used by steps 10-11) ----
+  ldsc_dir: "/path/to/polyfun"                       # PolyFun installation (compute_ldscores.py, ldsc.py)
+  baseline_annot_dir: "/path/to/baselineLD"          # baseline_chr{N}.annot.gz, .l2.ldscore.parquet, .l2.M
+  weights_dir: "/path/to/weights"                    # weights_chr{N}.l2.ldscore.parquet
+  ldsc_bfile_prefix: "/path/to/plink/panel_chr"      # PLINK reference panel: {prefix}{N}.bed/.bim/.fam
+  sumstats_file: "/path/to/bellenguez_munged.parquet"   # AD GWAS munged with PolyFun's munge_polyfun_sumstats.py
+
+  # ---- step 10: MAGMA ----
+  magma_binary: "/path/to/magma"                     # MAGMA v1.10
+  magma_gene_loc_file: "/path/to/NCBI38.gene.loc"
+  plink_ref_dir: "/path/to/reference_panels"         # {plink_ref_dir}/{EUR,AFR,AMR,EAS}/plink/ADSP_{POP}_chr{N}.bed/.bim/.fam
   placseq_file: "/path/to/placseq_interactions_hg38.tsv"
-
-  # Multi-ancestry variant predictions (for MAGMA)
-  multi_ancestry_predictions_dir: "/path/to/variant_list_other_ethnicity/MAGMA_predictions"
-
-  # LDSC paths
-  ldsc_dir: "/path/to/polyfun"           # PolyFun installation directory (contains ldsc.py, compute_ldscores.py)
-  baseline_annot_dir: "/path/to/baseline_filtered"
-  sumstats_file: "/path/to/sumstats.parquet"
-  weights_dir: "/path/to/weights"
-  ldsc_results_dir: "/path/to/ldsc_results"
-
-  # MAGMA paths
-  magma_dir: "/path/to/eMAGMA"           # Directory containing MAGMA binary and support files
-  magma_binary: "/path/to/magma"
-  plink_ref_dir: "/path/to/plink_reference"
-  magma_sumstats: "/path/to/magma_sumstats.txt"
+  adgc_sumstats_dir: "/path/to/ADGC"                 # ADGC AFR, AMR and EAS summary statistics
   gene_info_file: "/path/to/Homo_sapiens.gene_info.gz"
-  adgc_sumstats_dir: "/path/to/ADGC"     # ADGC multi-ancestry summary statistics
+  multi_ancestry_predictions_dir: "/path/to/noneur_panel"   # feature tables of the non-European variant panel
+  noneur_variants_file: "/path/to/noneur_variants.tsv.gz"   # optional: panel variants for GPN-STAR scoring
 
-  # Fine-mapping paths
-  genotype_dir: "/path/to/genotype"
-  fine_mapping_dir: "/path/to/fine_mapping_new_priors"
+  # ---- step 11: fine-mapping and colocalization (controlled-access data) ----
+  eqtl_data_dir: "/path/to/rosmap_eqtl"             # genotype/, {cell}/phenotype/, {cell}/covariate/, reference/
+  adsp_plink_dir: "/path/to/ADSP_EUR"               # ADSP_EUR_chr{N}.bed/.bim/.fam
+  gwas_sumstats_raw_file: "/path/to/GCST90027158.tsv.gz"   # Bellenguez et al. 2022, GWAS Catalog
+  ems_dir: "/path/to/EMS"                            # ems_top_{tissue}.tsv.bgz
+  ldsc_annotation_dir: "/path/to/polyfun_annotations"     # annotation LD scores for the PolyFun GWAS prior
+  gene_mapping_file: "/path/to/gene_mapping.tsv"    # optional: gene_id, gene_name, gene_TSS
+
+  # ---- step 12 ----
+  gencode_gtf_file: "/path/to/gencode.v45.basic.annotation.gtf.gz"
+
+  # ---- defaults: uncomment a line to change it ----
+  # train_dir: "{release_dir}/model_training/train/{cohort}"
+  # train_restricted_dir: "{release_dir}/model_training/train_restricted/{cohort}"
+  # test_dir: "{release_dir}/model_training/test/{cohort}"
+  # columns_dict_file: "{release_dir}/model_training/columns_dict/columns_dict.pkl"
+  # gene_lof_file: "{release_dir}/model_training/gene_lof/41588_2024_1820_MOESM4_ESM.xlsx"
+  # gnomad_maf_dir: "{release_dir}/model_training/gnomad_MAF"
+  # gpn_star_file: "{release_dir}/model_training/gpn_star/gpn_star_scores_all.parquet"
+  # feature_weights_file: "{release_dir}/model_training/feature_weights/best_configs_{cohort}.json"
+  # release_predictions_dir: "{release_dir}/predictions/{cohort}"
+  # all_variants_dir: "{data_dir}/training_data/{cohort}/all_variants"
+  # gene_list_dir: "{data_dir}/training_data/{cohort}"
+  # feature_weight_search_dir: "{output_dir}/{cohort}/feature_weight_search"
+  # model_dir: "{output_dir}/{cohort}/models"
+  # test_predictions_dir: "{output_dir}/{cohort}/test_predictions"
+  # gene_list_file: "{output_dir}/{cohort}/list_genes_all.csv"
+  # gpn_star_by_chr_dir: "{output_dir}/gpn_star_by_chr"
+  # predictions_dir: "{output_dir}/{cohort}/predictions"
+  # predictions_parquet_dir: "{output_dir}/{cohort}/predictions_parquet"
+  # release_export_dir: "{output_dir}/release"
+  # shap_dir: "{output_dir}/{cohort}/shap"
+  # aggregate_dir: "{output_dir}/aggregate_results"
+  # scratch_dir: "{output_dir}/scratch"
+  # susie_pips_dir: "{data_dir}/susie_vars_pips/{cohort}"
+  # sldsc_dir: "{output_dir}/sldsc"
+  # magma_dir: "{output_dir}/magma"
+  # noneur_gpn_star_file: "{magma_dir}/noneur_gpn_star/gpn_star_scores_noneur.parquet"
+  # finemap_dir: "{output_dir}/fine_mapping"
+  # ld_cache_dir: "{finemap_dir}/ld_cache"
+  # gwas_cache_dir: "{finemap_dir}/gwas_cache"
+  # adsp_backing_dir: "{finemap_dir}/adsp_backing"
+  # snpvar_dir: "{finemap_dir}/snpvar"
+  # gwas_sumstats_file: "{finemap_dir}/gwas/bellenguez_gcst90027158_hg38.tsv.gz"
+  # crosscell_dir: "{output_dir}/crosscell_coloc"
 
 credentials:
-  synapse_token: ""     # Set your Synapse personal access token
-
-data_sources:
-  model_training_synapse_id: "syn72248754"
-  predictions_synapse_id: "syn71338354"
-
-cell_types:
-  - Ast_mega_eQTL
-  - Exc_mega_eQTL
-  - Inh_mega_eQTL
-  - Mic_mega_eQTL
-  - Oli_mega_eQTL
-  - OPC_mega_eQTL
+  synapse_token: ""     # Synapse personal access token for download_synapse_data.py (or set SYNAPSE_AUTH_TOKEN)

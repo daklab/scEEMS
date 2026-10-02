@@ -2,7 +2,6 @@ name: scEEMS
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - python=3.9.18
   - catboost=1.2.7
@@ -29,3 +28,6 @@ dependencies:
   - pip:
     - synapseclient==4.9.0
     - openpyxl==3.1.5
+    - optuna==4.5.0
+    - --extra-index-url https://download.pytorch.org/whl/cpu
+    - torch==2.5.0+cpu

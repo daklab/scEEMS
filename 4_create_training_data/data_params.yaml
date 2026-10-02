@@ -5,3 +5,7 @@ train:
 test:
   positive_class_threshold: 0.9
   negative_class_threshold: 0.01
+
+train_restricted:
+  positive_class_threshold: 0.9
+  negative_class_threshold: 0.01

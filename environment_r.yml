@@ -1,0 +1,72 @@
+# R environment for the fine-mapping and colocalization steps (11_finemap_coloc, 12_crosscell_coloc),
+# with the versions used for the manuscript (R 4.5.1). It also carries the few Python packages those
+# steps' helper scripts need. Seven R packages are not available from conda at the versions used; after
+# creating the environment, install them with install_r_packages.R:
+#   conda env create -f environment_r.yml
+#   conda activate scEEMS_R
+#   R_LIBS_USER=NULL Rscript install_r_packages.R
+name: scEEMS_R
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.5.1
+  - r-susier=0.14.2
+  - r-coloc=5.2.3
+  - r-bigsnpr=1.12.21
+  - r-bigstatsr=1.6.2
+  - r-data.table=1.17.8
+  - r-matrix=1.7_4
+  - r-dplyr=1.1.4
+  - r-readr=2.1.5
+  - r-stringr=1.5.2
+  - r-tidyr=1.3.1
+  - r-purrr=1.1.0
+  - r-tibble=3.3.0
+  - r-vroom=1.6.6
+  - r-yaml=2.3.10
+  - r-remotes
+  # pecotmr dependencies
+  - r-r6=2.6.1
+  - r-rcpp=1.1.0
+  - r-rcpparmadillo=15.0.2_2        # 15.0.2 still ships the include/current headers pecotmr 0.3.16 uses
+  - r-rcppgsl=0.3.13
+  - r-dofuture=1.1.2
+  - r-furrr=0.3.1
+  - r-future=1.67.0
+  - r-magrittr=2.0.4
+  - r-matrixstats=1.5.0
+  - r-rlang=1.1.6
+  - r-vctrs=0.6.5
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - r-survival=3.8_3
+  # dependencies of the packages of install_r_packages.R
+  - r-mashr=0.2.79
+  - r-ashr=2.2_63
+  - r-mixsqp=0.3_54
+  - r-etrunct=0.1
+  - r-mvtnorm=1.3_3
+  - r-rcppparallel=5.1.11_1
+  - r-abind=1.4_8
+  - r-progress=1.2.3
+  - r-ggplot2
+  - r-ggrepel=0.9.6
+  - r-cowplot=1.2.0
+  - r-trust=0.1_8
+  - r-horseshoe=0.2.0
+  - r-deconvolver=1.2_1
+  - r-softimpute=1.4_3
+  - r-irlba=2.3.5.1
+  - r-truncnorm=1.0_9
+  - r-invgamma=1.2
+  - r-squarem=2021.1
+  - gsl
+  - compilers
+  # tabix and bgzip
+  - htslib
+  # helper scripts (credible-set export, gene lists, CLPP aggregation)
+  - python=3.9.18
+  - pandas=2.2.3
+  - pysam=0.22.1
+  - pyyaml=6.0.2

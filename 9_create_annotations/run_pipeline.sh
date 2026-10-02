@@ -1,55 +1,39 @@
 #!/bin/bash
-# Step 9: Create LDSC annotations and run partitioned heritability analysis
-# This script shows the full execution sequence. Adapt for your cluster.
+# Step 9 on one machine, for one cell type: the four annotation sets, their LD scores and S-LDSC runs, then
+# the result tables. Needs step 7 (all three models) and step 11. The LD scores and S-LDSC runs use the
+# PolyFun environment (POLYFUN_ENV, default polyfun) through `conda run`; the rest runs in the current
+# environment. tau_star.py and the aggregation scripts summarize every cell type with results, so rerun
+# them after the last cell type.
+#   bash run_pipeline.sh Mic_mega_eQTL
+set -euo pipefail
+COHORT=${1:-Mic_mega_eQTL}
+N=${N:-5000}
+PF="conda run --no-capture-output -n ${POLYFUN_ENV:-polyfun} python -u"
 
-set -e
+# ---- annotations
+sets=()
+for m in weighted_full unweighted_full weighted_restricted; do
+    for chr in $(seq 1 22); do python make_annotations.py "$chr" "$COHORT" "$m"; done
+    sets+=("pareto/${COHORT}_${m}")
+done
+python select_topn.py "$COHORT" "$N"
+for chr in $(seq 1 22); do
+    python make_annotations_pip.py "$chr" "$COHORT"
+    python make_annotations_topn.py "$chr" "$COHORT" "$N"
+    python make_annotations_cs.py "$chr" "$COHORT"
+done
+sets+=("pip/${COHORT}" "top${N}/${COHORT}" "cs/${COHORT}")
 
-CELL_TYPES=("Mic_mega_eQTL" "Ast_mega_eQTL" "Exc_mega_eQTL" "Inh_mega_eQTL" "Oli_mega_eQTL" "OPC_mega_eQTL")
-
-echo "=== Step 9a: Create annotations ==="
-for cell_type in "${CELL_TYPES[@]}"; do
-    echo "Submitting annotation jobs for ${cell_type}..."
-    # Revised model
-    sbatch --export=cell_type=${cell_type} run_jobs.sh
-    # Original weighted model
-    sbatch --export=cell_type=${cell_type} run_jobs_original.sh
-    # Unweighted model
-    sbatch --export=cell_type=${cell_type} run_jobs_unweighted.sh
+# ---- LD scores, then one S-LDSC run per column
+for s in "${sets[@]}"; do
+    for chr in $(seq 1 22); do $PF compute_ldscores.py "$s" "$chr"; done
+    ncol=$(python -c "import sys, pandas as pd; sys.path.insert(0, '../shared'); from config import path; \
+print(len(pd.read_csv(path('sldsc_dir') + '/$s/MLxQTL_chr22.annot.gz', sep='\t', nrows=0).columns) - 5)")
+    for i in $(seq 1 "$ncol"); do $PF ldscore_regression.py "$s" "$i"; done
 done
 
-echo "Wait for all annotation jobs to complete before proceeding."
-echo ""
-
-echo "=== Step 9b: Compute LD scores ==="
-for cell_type in "${CELL_TYPES[@]}"; do
-    echo "Submitting LD score jobs for ${cell_type}..."
-    # Set ANNOT_DIR for each variant before submitting
-    # Revised
-    sbatch --export=cell_type=${cell_type} template_ldscore.sh
-    # Original
-    sbatch --export=cell_type=${cell_type} template_ldscore_original.sh
-    # Unweighted
-    sbatch --export=cell_type=${cell_type} template_ldscore_unweighted.sh
-done
-
-echo "Wait for all LD score jobs to complete before proceeding."
-echo ""
-
-echo "=== Step 9c: Run LDSC regression ==="
-cd ldscore_regression
-for cell_type in "${CELL_TYPES[@]}"; do
-    # Revised model
-    sbatch run_jobs.sh
-    # Original model
-    sbatch --export=cell_type=${cell_type} run_jobs_original.sh
-    # Unweighted model
-    sbatch run_jobs_unweighted.sh
-done
-
-echo "Wait for all regression jobs to complete before proceeding."
-echo ""
-
-echo "=== Step 9d: Aggregate results ==="
-python aggregate_data.py
-
-echo "Step 9 complete."
+# ---- tables
+python tau_star.py
+python aggregate_prediction_vs_pip.py
+python aggregate_topn_sldsc.py "$N"
+python aggregate_cs_sldsc.py

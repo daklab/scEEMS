@@ -1,235 +1,143 @@
 # scEEMS: Machine Learning-Based Prediction of Cell-Type-Resolved Brain eQTLs
 
-**Version**: 1.0.0
+**Version**: 2.0.0 (revised manuscript)
 
-Code for the paper: *Machine Learning-Based Prediction of Cell-type Resolved Brain eQTLs Enhances Discovery of Variants Explaining Alzheimer's Disease Heritability*
+Code for the paper: *Machine Learning-Based Prediction of Cell-type Resolved Brain eQTLs Enhances Discovery
+of Variants Explaining Alzheimer's Disease Heritability*
 
 Preprint (medRxiv): https://doi.org/10.64898/2025.12.03.25341562
 
-Authors: Chirag M Lakhani, Giacomo Cavalca, Anjing Liu, Rohan Nidumbur, Ru Feng, Towfique Raj, Philip De Jager, The Alzheimer's Disease Functional Genomics Consortium, Gao Wang, David A. Knowles
+Authors: Chirag M Lakhani, Giacomo Cavalca, Anjing Liu, Rohan Nidumbur, Ru Feng, Towfique Raj, Philip De
+Jager, The Alzheimer's Disease Functional Genomics Consortium, Gao Wang, David A. Knowles
 
 ## Overview
 
-scEEMS (single-cell Expression-mediated Effect Modeling System) is a CatBoost-based framework that predicts whether genetic variants are expression quantitative trait loci (eQTLs) in specific brain cell types. The model integrates variant-level genomic annotations (Enformer, ChromBPNet) with gene-level conservation features (GeneBayes gene conservation scores) and cell-type-specific regulatory features (ABC enhancer scores, transcription factor binding) to generate per-variant, per-gene, per-cell-type eQTL probabilities.
+single-cell Enhanced Expression Modifier Scores (scEEMS) are CatBoost models that predict, for six brain
+cell types, the probability that a variant is a causal eQTL for a gene. Each variant-gene pair is described
+by 4,840 features: deep learning variant effect predictions (Enformer, BPNet, ChromBPNet and composite
+transcription factor scores), the GPN-STAR DNA language model score, Activity-by-Contact (ABC) scores, cell
+type cis-regulatory element annotations, baseline genomic annotations, distance to the TSS, variant type,
+gnomAD allele frequency and GeneBayes gene constraint. The models are trained on fine-mapped single-cell
+eQTLs of six cell types (FunGen-xQTL) with leave-one-chromosome-out cross-validation.
 
-These predictions are used for:
-- **LDSC partitioned heritability** analysis to quantify enrichment of Alzheimer's disease heritability
-- **MAGMA gene-set enrichment** to identify disease-relevant gene sets
-- **Informed fine-mapping priors** to improve SuSiE credible set resolution
+The predictions are used to:
+- partition Alzheimer's disease heritability with stratified LD score regression (S-LDSC);
+- link variants to genes for eQTL-informed MAGMA gene analysis (eMAGMA), in European and non-European GWAS;
+- serve as priors for eQTL fine-mapping, which is then colocalized with AD GWAS.
 
-## System Requirements
+### Changes in the revision
 
-### Software Dependencies
-
-- **Operating system (tested)**: Ubuntu 22.04.5 LTS (GNU/Linux 5.15; NYGC cluster login node)
-- **Python**: 3.9.18 (conda)
-- **R**: 4.3.3
-- **Core Python packages**: catboost, numpy, pandas, scipy, scikit-learn, pyarrow, dask, shap, pybedtools, pysam, pyranges, synapseclient, pyyaml
-- **Core R packages**: susieR, tidyverse, readr, yaml, pecotmr
-- **External tools** (configured via `config.yaml`):
-  - [bedtools](https://bedtools.readthedocs.io/) (v2.31.1)
-  - [MAGMA](https://ctg.cncr.nl/software/magma) (gene-set analysis binary; de Leeuw et al., 2015, https://doi.org/10.1371/journal.pcbi.1004219; E-MAGMA extension: Gerring et al., 2021, https://doi.org/10.1093/bioinformatics/btab115)
-  - [PolyFun/LDSC](https://github.com/omerweisssbrod/polyfun) (LD score regression; Weissbrod et al., 2020, https://doi.org/10.1038/s41588-020-00735-5)
-  - PLINK reference panel (for LD score computation)
-- **External data** (configured via `config.yaml`): Enformer/ChromBPNet variant effect predictions, ABC enhancer scores, baseline LD annotations, gnomAD MAF data, TF binding files, GeneBayes gene conservation scores, target lists
-- **Synapse data for model training**: download required training/test inputs from the Synapse project and use those paths in `config.yaml` (see Additional Information).
-
-### Versions Tested
-
-The pipeline was run on the NYGC cluster with Ubuntu 22.04.5 LTS, Python 3.9.18, and R 4.3.3. The exact conda environment is recorded in `conda_environment_full.txt`; a minimal dependency list is provided in `environment.yml` and `requirements.txt`.
-
-### Hardware
-
-- **No GPU required** for the main pipeline.
-- **Full pipeline**: requires a high-memory multi-core environment. Typical runs use **5–20 CPU cores** and **30–200 GB RAM** depending on step.
-- **Small-scale/demo runs**: can be executed on a standard desktop (8–32 GB RAM) by restricting to a single cell type and chromosome.
+- **GPN-STAR**: the absolute GPN-STAR log-likelihood ratio is a new feature. The scores of all 15.3 million
+  SNVs are in the data release (`model_training/gpn_star/`); `10_magma_analysis/noneur_gpn_star/` shows how
+  variants are scored with the GPN-STAR model.
+- **Data-driven feature weights**: instead of a fixed tenfold weight on the DL-VEP features, one CatBoost
+  feature weight per feature category is selected for each cell type by a multi-objective Bayesian search
+  (step 5), on odd and even chromosomes separately so a held-out chromosome never informs its own weights.
+- **Comparison models**: Unweighted (Full) (all weights 1) and Weighted (Restricted) (trained only on
+  positives with PIP > 0.9 in a credible set) are trained alongside scEEMS, Weighted (Full).
+- **Fine-mapping with five priors and colocalization** (step 11): uniform, EMS and the three models' priors,
+  colocalized with the Bellenguez et al. AD GWAS; cross-cell-type sharing of credible sets (step 12).
+- **Predicted-eQTL threshold**: the probability cut that defines predicted eQTLs (tau*) is chosen per cell
+  type by S-LDSC (step 9) and used by MAGMA (step 10) and SHAP (step 8).
 
 ## Pipeline
 
-| Step | Directory | Description |
-|------|-----------|-------------|
-| 1 | `1_process_datasets/` | Internal preprocessing of raw fine-mapping RDS files (not publicly distributed) |
-| 2 | `2_annotate_variants/` | Annotate variants with genomic features (Enformer, ChromBPNet) |
-| 3 | `3_cell_featurization/` | Create per-gene feature matrices with cell-type-specific annotations |
-| 4 | `4_create_training_data/` | Sample positive/negative training examples using PIP thresholds |
-| 5 | `5_model_training/` | Train CatBoost classifiers with leave-one-chromosome-out CV |
-| 6 | `6_model_inference/` | Score all variants genome-wide using trained models |
-| 7 | `7_aggregate_predictions/` | Combine per-gene predictions into chromosome-level files |
-| 8 | `8_shap_analysis/` | Compute SHAP values for model interpretability |
-| 9 | `9_create_annotations/` | Create LDSC annotations and run partitioned heritability analysis |
-| 10 | `10_magma_analysis/` | Run MAGMA gene-set enrichment analysis |
-| 11 | `11_fine_mapping_new_priors/` | Re-run SuSiE fine-mapping with scEEMS-informed priors |
+| Step | Directory | Description | Runs from the data release |
+|------|-----------|-------------|---|
+| 1 | `1_process_datasets/` | SuSiE eQTL fine-mapping results (FunGen-xQTL) to variant tables | no: inputs not distributed |
+| 2 | `2_annotate_variants/` | Variant annotations: Enformer, cell type epigenomics, baseline, TF scores | no: large external inputs |
+| 3 | `3_cell_featurization/` | Per-gene feature tables (`all_variants`) with ABC, ChromBPNet and distance features | no: steps 1-2 |
+| 4 | `4_create_training_data/` | Training and test sets (positives and matched negatives) | no: steps 1-3 (outputs are in the release) |
+| 5 | `5_model_training/` | Feature-weight search, LOCO training of the three models, AUPRC | **yes** |
+| 6 | `6_model_inference/` | Score every cis-variant of every gene | no: step 3 tables |
+| 7 | `7_aggregate_predictions/` | Collect predictions; export or import the released TSVs | **yes** (import/export) |
+| 8 | `8_shap_analysis/` | SHAP attribution by feature category | no: step 3 tables |
+| 9 | `9_create_annotations/` | S-LDSC heritability of predicted eQTLs; tau* | partly: the scEEMS threshold sweep, tau* and the PIP > 0.10 comparison, with LDSC reference data |
+| 10 | `10_magma_analysis/` | eMAGMA gene analysis, European and non-European GWAS | partly (see its README) |
+| 11 | `11_finemap_coloc/` | eQTL fine-mapping with five priors; colocalization with AD GWAS | no: controlled-access genotypes (outputs are in the release) |
+| 12 | `12_crosscell_coloc/` | Sharing of eQTL credible sets between cell types | no: step 11 fits |
 
-Each step directory contains a `README.md` with detailed documentation and a `run_pipeline.sh` example script.
-For provenance of how preprocessing files were created (and which upstream inputs are non-public), see `DATA_PROCESSING_NOTES.md`.
+Each step directory has a `README.md` (method, inputs, how to run, outputs) and SLURM scripts. Steps 1-4,
+6, 8, 11 and 12 need inputs that are not in the data release (controlled-access genotype and expression
+data, or intermediate feature tables of several terabytes); their code documents exactly how the released
+data and results were produced.
 
-## Installation Guide
+## Data release
 
-### 1. Clone and configure
+The data release is on Synapse in folder [syn69670587](https://www.synapse.org/Synapse:syn69670587):
+
+| Folder | Content | Used by |
+|---|---|---|
+| `model_training/` | `train/`, `train_restricted/` and `test/` sets per cell type; `gpn_star/` (GPN-STAR scores); `feature_weights/` (selected weights); `gnomad_MAF/`, `gene_lof/`, `columns_dict/`; `model_features.tsv` | step 5 |
+| `predictions/` | scEEMS predictions per cell type and chromosome (tabix-indexed TSV) | steps 9-10, your own analyses |
+| `fine_mapping/` | Credible sets of the five fine-mapping priors per cell type and chromosome (tabix-indexed TSV) | your own analyses |
+
+Each folder has a README describing its files and columns. Download with the helper script (Synapse account
+required; listing works without one):
+
+```bash
+python download_synapse_data.py --dry-run                                   # what would be downloaded
+python download_synapse_data.py --resource model_training --cell-type Mic   # microglia only, 3.2 GB
+python download_synapse_data.py                                             # everything, ~66 GB
+```
+
+Files go to `paths.release_dir` with the release's folder layout, which is where the code looks for them.
+
+## Installation
 
 ```bash
 git clone https://github.com/daklab/scEEMS.git
 cd scEEMS
-cp config.yaml.example config.yaml
-# Edit config.yaml with your paths and credentials
-```
-
-### 2. Install dependencies (conda recommended)
-
-```bash
-conda env create -f environment.yml
+conda env create -f environment.yml       # Python environment, steps 1-10
 conda activate scEEMS
+cp config.yaml.example config.yaml        # then set release_dir, output_dir and any inputs you need
 ```
 
-Alternatively, for pip users:
-```bash
-pip install -r requirements.txt
-```
+`environment.yml` pins the versions used for the manuscript (installation takes about 10 minutes);
+`conda_environment_full.txt` lists the full environment used to train and score the models. The
+fine-mapping and colocalization steps (11-12) use R 4.5 in a second environment, `environment_r.yml`, plus
+seven R packages that are not on conda, installed by `install_r_packages.R` (see the header of either file).
 
-The file `conda_environment_full.txt` records the exact conda environment used during development.
+### System requirements
 
-**R packages** (for Steps 1 and 11):
-```r
-install.packages(c("susieR", "pecotmr", "tidyverse", "readr", "yaml"))
-```
-
-**Typical install time**: ~15–30 minutes on a normal desktop (longer if conda needs to download many packages).
-
-## Public Data Download
-
-Publicly downloadable Synapse resources in this repository:
-
-- `model_training` (Project: `syn72248754`): train/test parquet data and supporting files (`columns_dict`, `gene_lof`, `gnomad_MAF`)
-- `predictions` (Folder: `syn71338354`): per-cell-type prediction outputs
-
-Download with the helper script:
-
-```bash
-cp config.yaml.example config.yaml
-python download_synapse_data.py --resource all
-```
-
-Or selectively:
-
-```bash
-python download_synapse_data.py --resource model_training
-python download_synapse_data.py --resource predictions
-```
-
-By default files are downloaded to `{paths.data_dir}/synapse_public/`.
-
-## Minimal Training (Chromosome 2 Only)
-
-This public demo runs **one cell type** (Microglia) and **one chromosome** (**chr2 only**) for model training (Step 5).
-
-### 1. Download chr2 demo files
-
-Use `5_model_training/README_minimal_chr2_demo.md` for:
-- exact required files
-- exact download URLs
-- parquet-directory setup (`part.*.parquet` files)
-
-### 2. Configure paths
-
-```bash
-cp config.yaml.example config.yaml
-# Set:
-# - paths.data_dir to your demo root (with chr2 train/test parquet directories)
-# - paths.gnomad_maf_dir to where gnomad_MAF_chr2.tsv is stored
-# - paths.columns_dict_file to columns_dict.pkl
-```
-
-### 3. Run the chr2 demo
-
-```bash
-cd 5_model_training
-bash run_minimal_training.sh \
-  Mic_mega_eQTL \
-  2 \
-  "<AUX_ROOT>/41588_2024_1820_MOESM4_ESM.xlsx"
-```
-
-Equivalent direct command:
-
-```bash
-cd 5_model_training
-python train_model.py Mic_mega_eQTL 2 \
-  --gene_lof_file "<AUX_ROOT>/41588_2024_1820_MOESM4_ESM.xlsx" \
-  --yaml_path data_params.yaml \
-  --single_chromosome_demo
-```
-
-### Expected output
-
-- Model file: `{data_dir}/training_data/Mic_mega_eQTL/model_results/model_standard_subset_conservative_weighted_chr_chr2_NPR_10.joblib`
-- Feature importance CSVs
-- Test set predictions
-
-### Expected runtime
-
-- **Normal desktop** (8–16 GB RAM, 4–8 cores): ~1–3 hours for a single chromosome (varies by data size).
-- **Cluster**: a typical run for this step uses about 5 CPU cores, 50 GB RAM, and up to 5 hours.
-
-For full multi-chromosome training, download the full Synapse `model_training` resource (`syn72248754`) and use the standard training workflow.
-
-## Instructions For Use
-
-### Run the pipeline
-
-Each step can be run independently. See the `README.md` in each directory for specific instructions.
-
-Note: Step 1 uses internal raw inputs that are not publicly distributed.
-For public workflows, start from Synapse `model_training` / `predictions` data and run downstream steps.
-
-```bash
-cd 5_model_training && bash run_pipeline.sh
-cd ../6_model_inference && bash run_pipeline.sh
-# ... and so on
-```
-
-### Cluster/HPC execution
-
-If you are running on a SLURM cluster, use the `run_jobs.sh` scripts provided in step directories where available and adapt resource requests (paths, partitions, and time limits) to your environment.
-
-## (Optional) Reproduction Instructions
-
-To reproduce all manuscript results exactly, run the full pipeline in order (Steps 1–11) using the same external datasets and annotations described in each step’s `README.md`.
-
-Note: Step 1 raw fine-mapping RDS inputs are not publicly distributed in this repository. Public users can run training/inference workflows from the Synapse `model_training` and `predictions` resources.
+- Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for steps 11-12 (`environment_r.yml`)
+- No GPU, except for the optional GPN-STAR scoring of non-European variants in step 10
+- Step 5: 10 CPU cores and 12 GB (microglia) to 60 GB (excitatory neurons) of memory per held-out
+  chromosome, 10-30 minutes each
+- External tools for specific steps: PolyFun/LDSC (step 9), MAGMA v1.10 (step 10); see each step's README
 
 ## Configuration
 
-All paths and credentials are managed through `config.yaml`. Copy `config.yaml.example` and fill in your values:
+All paths are set in `config.yaml` (gitignored), or in another file named by the `SCEEMS_CONFIG`
+environment variable. Steps 5 and 7 need only `release_dir` and `output_dir`:
 
 ```yaml
 paths:
-  data_dir: "/path/to/data"
-  output_dir: "/path/to/output"
-  fine_mapping_dir: "/path/to/fine_mapping"
-  scratch_dir: "/tmp"
-
-credentials:
-  synapse_token: ""
-
-data_sources:
-  model_training_synapse_id: "syn72248754"
-  predictions_synapse_id: "syn71338354"
+  release_dir: "/path/to/scEEMS_data"     # the downloaded data release
+  output_dir: "/path/to/output"           # everything the pipeline writes
+  data_dir: "/path/to/data"               # steps 1-4 and their outputs (not needed for steps 5 and 7)
 ```
 
-## Pre-computed Scores
+Path settings are templates that may refer to `{release_dir}`, `{output_dir}`, `{data_dir}`, other path
+settings and `{cohort}`; anything not set in `config.yaml` takes the default in `shared/config.py`
+(inputs from the data release, outputs under `output_dir`). `config.yaml.example` lists every setting.
 
-Step 2 requires pre-computed variant effect predictions. See `2_annotate_variants/README.md` for details on obtaining:
+## Quick start: reproduce a microglia model
 
-- **Enformer** variant effect predictions (Avsec et al., 2021)
-- **ChromBPNet** cell-type-specific accessibility predictions (Pampari et al., 2025; https://doi.org/10.1101/2024.12.25.630221)
-- **GeneBayes** gene conservation scores (Zeng et al., 2024; https://doi.org/10.1038/s41588-024-01820-9)
-- **Baseline LD annotations** (Gazal et al., 2017; https://doi.org/10.1038/ng.3954)
+```bash
+python download_synapse_data.py --resource model_training --cell-type Mic
+cd 5_model_training
+python train_loco.py Mic_mega_eQTL 1
+```
 
-## Cell Types
+This trains the three microglia models with chromosome 1 held out (10-20 minutes with 10 CPU cores) and
+scores the chromosome 1 test set: 242 variant-gene pairs, AUPRC 0.8015 for scEEMS (`weighted_full`), 0.7555
+for Unweighted (Full) and 0.7499 for Weighted (Restricted). Models trained from the data release reproduce
+the published models exactly (see `5_model_training/README.md` for the one exception).
 
-The pipeline supports the following brain cell types:
+## Cell types
 
-| Abbreviation | Cell Type |
+| Abbreviation | Cell type |
 |---|---|
 | Ast | Astrocytes |
 | Exc | Excitatory neurons |
@@ -238,94 +146,9 @@ The pipeline supports the following brain cell types:
 | Oli | Oligodendrocytes |
 | OPC | Oligodendrocyte precursor cells |
 
-## Additional Information
-
-- **Data access**: Publicly distributed inputs are in Synapse `model_training` (`syn72248754`) and `predictions` (`syn71338354`). Step 1 raw fine-mapping RDS inputs are not publicly distributed in this repo. Step 2 requires large annotation datasets that are not distributed with this repo.
-- **Synapse data access**: Data access requires a [Synapse](https://www.synapse.org/) account and may require approval for controlled-access datasets.
-- **Synapse model training data** (Project: [syn72248754](https://www.synapse.org/Synapse:syn72248754)):
-
-  **Training data** (per cell type):
-
-  | Cell Type | Synapse ID |
-  |-----------|-----------|
-  | Astrocytes (Ast) | syn72248805 |
-  | Excitatory neurons (Exc) | syn72248803 |
-  | Inhibitory neurons (Inh) | syn72248804 |
-  | Microglia (Mic) | syn72248802 |
-  | OPC | syn72248807 |
-  | Oligodendrocytes (Oli) | syn72248806 |
-
-  **Test data** (per cell type):
-
-  | Cell Type | Synapse ID |
-  |-----------|-----------|
-  | Astrocytes (Ast) | syn72248942 |
-  | Excitatory neurons (Exc) | syn72248940 |
-  | Inhibitory neurons (Inh) | syn72248941 |
-  | Microglia (Mic) | syn72248939 |
-  | OPC | syn72248944 |
-  | Oligodendrocytes (Oli) | syn72248943 |
-
-  **Supporting files**:
-
-  | File | Synapse ID |
-  |------|-----------|
-  | README_model_training.txt | syn72249887 |
-  | columns_dict | syn72248797 |
-  | gene_lof | syn72248800 |
-  | gnomad_MAF | syn72248799 |
-
-  **Predictions root folder**: syn71338354
-
-  **Predictions by cell type**:
-
-  | Resource | Synapse ID |
-  |------|-----------|
-  | Ast_mega_eQTL | syn71338358 |
-  | Exc_mega_eQTL | syn71338356 |
-  | Inh_mega_eQTL | syn71338357 |
-  | Mic_mega_eQTL | syn71338355 |
-  | OPC_mega_eQTL | syn71338360 |
-  | Oli_mega_eQTL | syn71338359 |
-  | README_predictions.txt | syn71338459 |
-- **Storage**: Full pipeline outputs are large (multi-terabyte scale depending on cohorts and annotations). Ensure adequate disk space in `paths.output_dir`.
-- **Compute**: The pipeline is designed for HPC. For small tests or demos, limit to a single cohort and chromosome to reduce runtime and memory usage.
-
-### Download From Synapse
-
-1. Install and authenticate the Synapse client.
-2. Download public `model_training` and/or `predictions` resources by Synapse ID.
-
-Project URLs:
-```text
-https://www.synapse.org/Synapse:syn72248754
-https://www.synapse.org/Synapse:syn71338354
-```
-
-Example commands:
-```bash
-pip install synapseclient
-synapse login
-
-# Download model_training project
-synapse get syn72248754
-
-# Download predictions folder
-synapse get syn71338354
-
-# Or download specific model_training folders
-synapse get syn72248797  # columns_dict
-synapse get syn72248800  # gene_lof
-synapse get syn72248799  # gnomad_MAF
-synapse get syn72248798  # train
-synapse get syn72248801  # test
-```
-
-Raw Step 1 fine-mapping RDS files are not publicly distributed in this repository.
+The code refers to each cell type's data as `{Cell}_mega_eQTL` (e.g. `Mic_mega_eQTL`).
 
 ## Citation
-
-If you use this code, please cite:
 
 ```bibtex
 @article{lakhani2025sceems,
@@ -340,4 +163,4 @@ If you use this code, please cite:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License; see [LICENSE](LICENSE).

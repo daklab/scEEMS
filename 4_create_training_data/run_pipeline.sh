@@ -13,6 +13,7 @@ for chr in $(seq 1 22); do
     echo "Creating training data for chr${chr}..."
     python create_training_datasets.py $chr train $COHORT $NPR
     python create_training_datasets.py $chr test $COHORT $NPR
+    python create_training_datasets.py $chr train_restricted $COHORT $NPR
 done
 
 echo "=== Step 4 Complete ==="
