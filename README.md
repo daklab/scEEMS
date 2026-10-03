@@ -65,7 +65,7 @@ The data release is on Synapse in folder [syn69670587](https://www.synapse.org/S
 
 | Folder | Content | Used by |
 |---|---|---|
-| `model_training/` | `train/`, `train_restricted/` and `test/` sets per cell type; `gpn_star/` (GPN-STAR scores); `feature_weights/` (selected weights); `gnomad_MAF/`, `gene_lof/`, `columns_dict/`; `model_features.tsv` | step 5 |
+| `model_training/` | `train/`, `train_restricted/` and `test/` sets per cell type; `models/` (the published models); `gpn_star/` (GPN-STAR scores); `feature_weights/` (selected weights); `gnomad_MAF/`, `gene_lof/`, `columns_dict/`; `model_features.tsv` | step 5 |
 | `predictions/` | scEEMS predictions per cell type and chromosome (tabix-indexed TSV) | step 9, your own analyses |
 | `fine_mapping/` | Credible sets of the five fine-mapping priors per cell type and chromosome (tabix-indexed TSV) | your own analyses |
 
@@ -120,17 +120,20 @@ Path settings are templates that may refer to `{release_dir}`, `{output_dir}`, `
 settings and `{cohort}`; anything not set in `config.yaml` takes the default in `shared/config.py`
 (inputs from the data release, outputs under `output_dir`). `config.yaml.example` lists every setting.
 
-## Quick start: train a microglia model
+## Quick start: microglia
 
 ```bash
 python download_synapse_data.py --resource model_training --cell-type Mic
 cd 5_model_training
-python train_loco.py Mic_mega_eQTL 1
+python evaluate_published_models.py Mic_mega_eQTL     # evaluate the published models
+python train_loco.py Mic_mega_eQTL 1                  # train models yourself, chromosome 1 held out
 ```
 
-This trains the three microglia models with chromosome 1 held out (10-20 minutes with 10 CPU cores) and
-scores the chromosome 1 test set: 242 variant-gene pairs, AUPRC 0.8015 for scEEMS (`weighted_full`), 0.7555
-for Unweighted (Full) and 0.7499 for Weighted (Restricted).
+`evaluate_published_models.py` scores the microglia test sets with the published models in a few minutes:
+the pooled held-out AUPRC of scEEMS (`weighted_full`) is 0.693, as in the manuscript. `train_loco.py` trains
+the three microglia models with chromosome 1 held out (10-20 minutes with 10 CPU cores) and scores the
+chromosome 1 test set: 242 variant-gene pairs, AUPRC 0.8015 for scEEMS, 0.7555 for Unweighted (Full) and
+0.7499 for Weighted (Restricted).
 
 ## Cell types
 

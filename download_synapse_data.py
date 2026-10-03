@@ -3,7 +3,8 @@ Download the scEEMS data release from Synapse into paths.release_dir (config.yam
 folder layout, which is where the pipeline looks for it.
 
 The release folder (default syn69670587) contains:
-  model_training/  training and test data, GPN-STAR scores, selected feature weights, supporting files
+  model_training/  training and test data, the published models, GPN-STAR scores, selected feature weights,
+                   supporting files
   predictions/     scEEMS predictions, one tabix-indexed TSV per cell type and chromosome
   fine_mapping/    credible sets of the five fine-mapping priors
 Folders are found by name, so the script does not depend on the Synapse IDs of the subfolders.

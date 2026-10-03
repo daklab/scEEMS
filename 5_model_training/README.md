@@ -1,8 +1,8 @@
 # Step 5: Model Training
 
 Train the scEEMS CatBoost classifiers with leave-one-chromosome-out (LOCO) cross-validation and measure
-their held-out AUPRC. Everything this step reads is in the `model_training/` folder of the data release,
-so it can be run without steps 1-4.
+their held-out AUPRC, or evaluate the published models on the same test sets without training. Everything
+this step reads is in the `model_training/` folder of the data release, so it can be run without steps 1-4.
 
 ## Overview
 
@@ -37,6 +37,7 @@ the scEEMS predictions of the data release.
 
 | Script | Description |
 |--------|-------------|
+| `evaluate_published_models.py` | Score the test sets with the published models of the data release and report their pooled AUPRC (no training) |
 | `train_loco.py` | Train the three models for one cell type and one held-out chromosome; score its test set |
 | `evaluate_auprc.py` | Pooled held-out AUPRC per model, with paired bootstrap CIs of the differences |
 | `search_feature_weights.py` | Optional: feature-category weight search on the odd or the even chromosomes |
@@ -55,12 +56,28 @@ From the data release (`paths.release_dir` in `config.yaml`, see the top-level R
 - `model_training/train/{cohort}/`, `train_restricted/{cohort}/`, `test/{cohort}/`
 - `model_training/gpn_star/gpn_star_scores_all.parquet`, `gnomad_MAF/`, `gene_lof/`, `columns_dict/`
 - `model_training/feature_weights/best_configs_{cohort}.json`
+- `model_training/models/{cohort}/`: the published models (`evaluate_published_models.py` only)
 
 Each `annotated_data_{cohort}_chr{N}.parquet` is a directory of parquet part files; keep the downloaded
 directories as they are. Files are read in natural order (chromosome, then part number), the order the
 published models were trained in, whatever order your filesystem lists them in.
 
-## Quick start: microglia, one held-out chromosome
+## Evaluating the published models
+
+```bash
+cd 5_model_training
+python evaluate_published_models.py Mic_mega_eQTL
+```
+
+Each held-out chromosome's test set is scored by the published models that held that chromosome out, and
+the pooled AUPRC of each model is printed (2-6 minutes per cell type and under 2 GB of memory, no training). For `weighted_full`
+(scEEMS) these are the held-out AUPRCs of the manuscript: astrocytes 0.663, excitatory neurons 0.684,
+inhibitory neurons 0.639, microglia 0.693, oligodendrocytes 0.762, OPCs 0.758.
+
+To score variants (step 6) or compute SHAP values (step 8) with the published models instead of your own,
+set `model_dir: "{published_models_dir}"` in `config.yaml`.
+
+## Quick start: training microglia, one held-out chromosome
 
 About 3.2 GB of data: `train/`, `train_restricted/` and `test/` for `Mic_mega_eQTL`, plus `gpn_star/`,
 `gnomad_MAF/`, `gene_lof/`, `columns_dict/` and `feature_weights/`.
@@ -87,9 +104,6 @@ python evaluate_auprc.py Mic_mega_eQTL                     # after all 22 have f
 
 or `bash run_pipeline.sh Mic_mega_eQTL` without SLURM. Each held-out chromosome takes 10-30 minutes with
 10 CPU cores and needs 12 GB (microglia) to 60 GB (excitatory neurons) of memory.
-
-Pooled held-out AUPRC of `weighted_full` from `evaluate_auprc.py`: astrocytes 0.663, excitatory neurons
-0.684, inhibitory neurons 0.639, microglia 0.689, oligodendrocytes 0.762, OPCs 0.757.
 
 ## Reproducing the feature-weight search
 
@@ -122,6 +136,8 @@ Under `paths.output_dir`:
   pred_weighted_full, pred_unweighted_full, pred_weighted_restricted`
 - `{cohort}/test_predictions/auprc.json`
 - `{cohort}/feature_weight_search/optuna_{cohort}_{odd,even}.db`, `best_configs_{cohort}.json`
+- `{cohort}/published_models/test_pred_chr{N}.parquet` (same columns) and `auprc.json`, from
+  `evaluate_published_models.py`
 
 ## Notes
 
