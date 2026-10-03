@@ -1,4 +1,4 @@
-# R environment for the fine-mapping and colocalization steps (11_finemap_coloc, 12_crosscell_coloc),
+# R environment for the fine-mapping and colocalization steps (10_finemap_coloc, 11_crosscell_coloc),
 # with the versions used for the manuscript (R 4.5.1). It also carries the few Python packages those
 # steps' helper scripts need. Seven R packages are not available from conda at the versions used; after
 # creating the environment, install them with install_r_packages.R:
@@ -63,6 +63,7 @@ dependencies:
   - r-squarem=2021.1
   - gsl
   - compilers
+  - sysroot_linux-64=2.17            # compile against glibc 2.17, so install_r_packages.R builds run on older Linux
   # tabix and bgzip
   - htslib
   # helper scripts (credible-set export, gene lists, CLPP aggregation)
