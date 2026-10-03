@@ -20,7 +20,6 @@ paths:
   enformer_dir: "/path/to/enformer"
   chrombpnet_dir: "/path/to/chrombpnet/variant_list_scored"
   tf_file: "/path/to/TF.tsv"
-  targets_file: "/path/to/targets_human.txt"
 
   # ---- step 9: S-LDSC (also used by step 10) ----
   ldsc_dir: "/path/to/polyfun"                       # PolyFun installation (compute_ldscores.py, ldsc.py)
@@ -51,6 +50,13 @@ paths:
   # feature_weights_file: "{release_dir}/model_training/feature_weights/best_configs_{cohort}.json"
   # published_models_dir: "{release_dir}/model_training/models/{cohort}"
   # release_predictions_dir: "{release_dir}/predictions/{cohort}"
+  # featurization_dir: "{release_dir}/featurization"
+  # chrombpnet_models_dir: "{featurization_dir}/chrombpnet_models"
+  # chrombpnet_peaks_file: "{featurization_dir}/chrombpnet_peaks.tsv.gz"
+  # celltype_annotations_file: "{featurization_dir}/celltype_annotations.bed.gz"
+  # abc_scores_file: "{featurization_dir}/abc_scores.tsv.gz"
+  # genes_file: "{featurization_dir}/genes.tsv"
+  # targets_file: "{featurization_dir}/targets_human.txt"
   # finemapping_rds_dir: "{data_dir}/release_04_2024"
   # susie_dir: "{data_dir}/susie_vars_pips"
   # variant_list_dir: "{susie_dir}/variant_list"

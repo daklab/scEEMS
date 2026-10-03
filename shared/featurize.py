@@ -77,20 +77,29 @@ def make_variant_features(df):
 
 
 # ------------------------------------------------------------------ loaders
-def load_aux(maf_chrom=None):
-    """Gene constraint (gene_lof), gnomAD MAF and the columns dictionary. `maf_chrom` (e.g. 'chr7') loads
-    only that chromosome's MAF table (per-gene inference); the default loads all 22 (training)."""
+def load_gene_lof():
+    """Gene constraint per gene: gene_id, gene_lof = log2 of post_mean in gene_lof_file."""
     glof = pd.read_excel(path("gene_lof_file"), "Supplementary Table 1")[["ensg", "post_mean"]]
     glof = glof.rename(columns={"ensg": "gene_id", "post_mean": "gene_lof"})
     glof["gene_lof"] = np.log2(glof["gene_lof"])
+    return glof
+
+
+def load_columns_dict():
+    with open(path("columns_dict_file"), "rb") as fh:
+        return pickle.load(fh)
+
+
+def load_aux(maf_chrom=None):
+    """Gene constraint (gene_lof), gnomAD MAF and the columns dictionary. `maf_chrom` (e.g. 'chr7') loads
+    only that chromosome's MAF table (per-gene inference); the default loads all 22 (training)."""
+    glof = load_gene_lof()
     maf_dir = path("gnomad_maf_dir")
     if maf_chrom is not None:
         maf = pd.read_csv(f"{maf_dir}/gnomad_MAF_{maf_chrom}.tsv", sep="\t")[["variant_id", "gnomad_MAF"]]
     else:
         maf = dd.read_csv(f"{maf_dir}/gnomad_MAF_chr*.tsv", sep="\t")[["variant_id", "gnomad_MAF"]].compute()
-    with open(path("columns_dict_file"), "rb") as fh:
-        column_dict = pickle.load(fh)
-    return dict(glof=glof, maf=maf, column_dict=column_dict)
+    return dict(glof=glof, maf=maf, column_dict=load_columns_dict())
 
 
 def load_gpn_map(chrom=None):
@@ -128,7 +137,9 @@ def _list_parquet(cohort, lane, chroms):
     return sorted(files, key=_natural_key)
 
 
-def _attach_aux(df, aux):
+def attach_aux(df, aux):
+    """Add the variant features, gene_lof and gnomad_MAF (aux["glof"], aux["maf"]) to a frame of variant-gene
+    pairs; missing gene_lof and gnomad_MAF are set to the median over the frame."""
     for c in ("variant_id", "gene_id"):
         if c in df.columns:
             df[c] = df[c].astype(object)
@@ -147,7 +158,7 @@ def load_training_tables(cohort, lane, chroms, aux):
     if not files:
         return pd.DataFrame()
     df = dd.read_parquet(files, engine="pyarrow").compute().reset_index(drop=True)
-    return _attach_aux(df, aux)
+    return attach_aux(df, aux)
 
 
 def load_gene_variants(gene_path, gene_id, aux):
@@ -155,7 +166,7 @@ def load_gene_variants(gene_path, gene_id, aux):
     df = pd.read_parquet(gene_path).reset_index(drop=True)
     if "gene_id" not in df.columns:
         df["gene_id"] = gene_id
-    return _attach_aux(df, aux)
+    return attach_aux(df, aux)
 
 
 # ------------------------------------------------------------------ feature matrix

@@ -33,6 +33,14 @@ DEFAULTS = {
     "feature_weights_file": "{release_dir}/model_training/feature_weights/best_configs_{cohort}.json",
     "published_models_dir": "{release_dir}/model_training/models/{cohort}",
     "release_predictions_dir": "{release_dir}/predictions/{cohort}",
+    # ---- data release (featurization/): inputs for featurizing new variants (featurization/) ----
+    "featurization_dir": "{release_dir}/featurization",
+    "chrombpnet_models_dir": "{featurization_dir}/chrombpnet_models",
+    "chrombpnet_peaks_file": "{featurization_dir}/chrombpnet_peaks.tsv.gz",
+    "celltype_annotations_file": "{featurization_dir}/celltype_annotations.bed.gz",
+    "abc_scores_file": "{featurization_dir}/abc_scores.tsv.gz",
+    "genes_file": "{featurization_dir}/genes.tsv",
+    "targets_file": "{featurization_dir}/targets_human.txt",
     # ---- steps 1-4: inputs and outputs of the featurization (not in the data release) ----
     "finemapping_rds_dir": "{data_dir}/release_04_2024",
     "susie_dir": "{data_dir}/susie_vars_pips",

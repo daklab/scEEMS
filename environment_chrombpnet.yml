@@ -1,0 +1,22 @@
+# ChromBPNet environment for featurization/3_score_chrombpnet.py: the ChromBPNet (ATAC) and BPNet (H3K27ac,
+# H3K4me3) models of the data release, run with bpnet-lite and tangermeme on PyTorch (CUDA 12.4 build; it
+# also runs on CPU).
+#   conda env create -f environment_chrombpnet.yml
+name: scEEMS_chrombpnet
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - --extra-index-url https://download.pytorch.org/whl/cu124
+    - torch==2.5.1
+    - bpnet-lite==0.8.1
+    - tangermeme==0.4.4
+    - pyfaidx==0.8.1.3
+    - h5py==3.12.1
+    - scipy==1.14.1
+    - numpy==1.26.4
+    - pandas==2.2.3
+    - pyarrow==17.0.0
+    - pyyaml==6.0.2

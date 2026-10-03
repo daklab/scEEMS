@@ -54,6 +54,9 @@ The predictions are used to:
 | 10 | `10_finemap_coloc/` | eQTL fine-mapping with five priors; colocalization with AD GWAS | no: controlled-access genotypes (outputs are in the release) |
 | 11 | `11_crosscell_coloc/` | Sharing of eQTL credible sets between cell types | no: step 10 fits |
 
+`featurization/` scores new variants with the published models: it computes the features of any variant-gene
+pairs as steps 2-3 computed them for the training data (see [Scoring new variants](#scoring-new-variants)).
+
 Each step directory has a `README.md` (method, inputs, how to run, outputs); steps 5-11 also have SLURM job
 scripts. Steps 1-4, 6, 8, 10 and 11 need inputs that are not in the data release (controlled-access genotype and expression
 data, or intermediate feature tables of several terabytes); their code documents exactly how the released
@@ -68,6 +71,7 @@ The data release is on Synapse in folder [syn69670587](https://www.synapse.org/S
 | `model_training/` | `train/`, `train_restricted/` and `test/` sets per cell type; `models/` (the published models); `gpn_star/` (GPN-STAR scores); `feature_weights/` (selected weights); `gnomad_MAF/`, `gene_lof/`, `columns_dict/`; `model_features.tsv` | step 5 |
 | `predictions/` | scEEMS predictions per cell type and chromosome (tabix-indexed TSV) | step 9, your own analyses |
 | `fine_mapping/` | Credible sets of the five fine-mapping priors per cell type and chromosome (tabix-indexed TSV) | your own analyses |
+| `featurization/` | ChromBPNet/BPNet models, peaks, cell type annotations, ABC scores and gene TSSs for featurizing new variants | `featurization/` |
 
 Each folder has a README describing its files and columns. Download with the helper script (Synapse account
 required; listing works without one):
@@ -94,11 +98,13 @@ cp config.yaml.example config.yaml        # then set release_dir, output_dir and
 `conda_environment_full.txt` lists the full environment used to train and score the models. The R scripts
 (step 1's `get_vars_pips.R` and steps 10-11) use R 4.5 in a second environment, `environment_r.yml`, plus
 seven R packages that are not on conda, installed by `install_r_packages.R` (see the header of either file).
+Scoring new variants (`featurization/`) also uses `environment_enformer.yml` (TensorFlow, Enformer) and
+`environment_chrombpnet.yml` (PyTorch, bpnet-lite), which can use a GPU.
 
 ### System requirements
 
 - Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for the R scripts (`environment_r.yml`)
-- No GPU
+- No GPU (scoring new variants uses one if available)
 - Step 5: 10 CPU cores and 12 GB (microglia) to 60 GB (excitatory neurons) of memory per held-out
   chromosome, 10-30 minutes each
 - External tools for specific steps: PolyFun/LDSC (steps 9 and 10, in its own conda environment with
@@ -134,6 +140,14 @@ the pooled held-out AUPRC of scEEMS (`weighted_full`) is 0.693, as in the manusc
 the three microglia models with chromosome 1 held out (10-20 minutes with 10 CPU cores) and scores the
 chromosome 1 test set: 242 variant-gene pairs, AUPRC 0.8015 for scEEMS, 0.7555 for Unweighted (Full) and
 0.7499 for Weighted (Restricted).
+
+## Scoring new variants
+
+`featurization/` computes the features of a table of variants (`chrom pos ref alt`, optionally the gene to
+score each for) and scores them with the published models in all six cell types; seven scripts, three
+conda environments, and the `featurization/` and `model_training/` folders of the data release plus the
+public GRCh38, Enformer, GPN-STAR and gnomAD files. The example scores the PICALM/EED variants rs10792832
+and rs3851179. See [featurization/README.md](featurization/README.md).
 
 ## Cell types
 

@@ -7,6 +7,8 @@ The release folder (default syn69670587) contains:
                    supporting files
   predictions/     scEEMS predictions, one tabix-indexed TSV per cell type and chromosome
   fine_mapping/    credible sets of the five fine-mapping priors
+  featurization/   ChromBPNet models, peaks, cell type annotations, ABC scores and genes for featurizing
+                   new variants (featurization/)
 Folders are found by name, so the script does not depend on the Synapse IDs of the subfolders.
 
 Usage:
@@ -14,6 +16,7 @@ Usage:
   python download_synapse_data.py                                            # everything
   python download_synapse_data.py --resource model_training --cell-type Mic  # step 5 quick start
   python download_synapse_data.py --resource predictions --cell-type Mic Ast
+  python download_synapse_data.py --resource featurization model_training    # scoring new variants
 
 Authentication: a Synapse personal access token from config.yaml (credentials.synapse_token) or the
 SYNAPSE_AUTH_TOKEN environment variable; otherwise synapseclient's own login (e.g. ~/.synapseConfig).
@@ -27,7 +30,7 @@ import synapseclient
 import yaml
 
 ROOT_ID = "syn69670587"
-RESOURCES = ["model_training", "predictions", "fine_mapping"]
+RESOURCES = ["model_training", "predictions", "fine_mapping", "featurization"]
 CELL_DIR = re.compile(r"^(Ast|Exc|Inh|Mic|Oli|OPC)_mega_eQTL$")
 
 
