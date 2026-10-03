@@ -9,7 +9,7 @@
 paths:
   # ---- base directories ----
   release_dir: "/path/to/scEEMS_data"      # data release from Synapse: model_training/, predictions/, fine_mapping/
-  output_dir: "/path/to/output"            # everything steps 5-12 write
+  output_dir: "/path/to/output"            # everything steps 5-11 write
   data_dir: "/path/to/data"                # inputs and outputs of steps 1-4
   scratch_dir: "/path/to/scratch"          # temporary files (steps 1-4 and dask)
 
@@ -22,24 +22,14 @@ paths:
   tf_file: "/path/to/TF.tsv"
   targets_file: "/path/to/targets_human.txt"
 
-  # ---- step 9: S-LDSC (also used by steps 10-11) ----
+  # ---- step 9: S-LDSC (also used by step 10) ----
   ldsc_dir: "/path/to/polyfun"                       # PolyFun installation (compute_ldscores.py, ldsc.py)
   baseline_annot_dir: "/path/to/baselineLD"          # baseline_chr{N}.annot.gz, .l2.ldscore.parquet, .l2.M
   weights_dir: "/path/to/weights"                    # weights_chr{N}.l2.ldscore.parquet
   ldsc_bfile_prefix: "/path/to/plink/panel_chr"      # PLINK reference panel: {prefix}{N}.bed/.bim/.fam
   sumstats_file: "/path/to/bellenguez_munged.parquet"   # AD GWAS munged with PolyFun's munge_polyfun_sumstats.py
 
-  # ---- step 10: MAGMA ----
-  magma_binary: "/path/to/magma"                     # MAGMA v1.10
-  magma_gene_loc_file: "/path/to/NCBI38.gene.loc"
-  plink_ref_dir: "/path/to/reference_panels"         # {plink_ref_dir}/{EUR,AFR,AMR,EAS}/plink/ADSP_{POP}_chr{N}.bed/.bim/.fam
-  placseq_file: "/path/to/placseq_interactions_hg38.tsv"
-  adgc_sumstats_dir: "/path/to/ADGC"                 # ADGC AFR, AMR and EAS summary statistics
-  gene_info_file: "/path/to/Homo_sapiens.gene_info.gz"
-  multi_ancestry_predictions_dir: "/path/to/noneur_panel"   # feature tables of the non-European variant panel
-  noneur_variants_file: "/path/to/noneur_variants.tsv.gz"   # optional: panel variants for GPN-STAR scoring
-
-  # ---- step 11: fine-mapping and colocalization (controlled-access data) ----
+  # ---- step 10: fine-mapping and colocalization (controlled-access data) ----
   eqtl_data_dir: "/path/to/rosmap_eqtl"             # genotype/, {cell}/phenotype/, {cell}/covariate/, reference/
   adsp_plink_dir: "/path/to/ADSP_EUR"               # ADSP_EUR_chr{N}.bed/.bim/.fam
   gwas_sumstats_raw_file: "/path/to/GCST90027158.tsv.gz"   # Bellenguez et al. 2022, GWAS Catalog
@@ -47,7 +37,7 @@ paths:
   ldsc_annotation_dir: "/path/to/polyfun_annotations"     # annotation LD scores for the PolyFun GWAS prior
   gene_mapping_file: "/path/to/gene_mapping.tsv"    # optional: gene_id, gene_name, gene_TSS
 
-  # ---- step 12 ----
+  # ---- step 11 ----
   gencode_gtf_file: "/path/to/gencode.v45.basic.annotation.gtf.gz"
 
   # ---- defaults: uncomment a line to change it ----
@@ -75,8 +65,6 @@ paths:
   # scratch_dir: "{output_dir}/scratch"
   # susie_pips_dir: "{data_dir}/susie_vars_pips/{cohort}"
   # sldsc_dir: "{output_dir}/sldsc"
-  # magma_dir: "{output_dir}/magma"
-  # noneur_gpn_star_file: "{magma_dir}/noneur_gpn_star/gpn_star_scores_noneur.parquet"
   # finemap_dir: "{output_dir}/fine_mapping"
   # ld_cache_dir: "{finemap_dir}/ld_cache"
   # gwas_cache_dir: "{finemap_dir}/gwas_cache"

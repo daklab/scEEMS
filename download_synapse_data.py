@@ -1,6 +1,6 @@
 """
 Download the scEEMS data release from Synapse into paths.release_dir (config.yaml), keeping the release's
-folder layout, which is where steps 5-12 look for it.
+folder layout, which is where steps 5-11 look for it.
 
 The release folder (default syn69670587) contains:
   model_training/  training and test data, GPN-STAR scores, selected feature weights, supporting files

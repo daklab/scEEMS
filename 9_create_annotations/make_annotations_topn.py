@@ -11,7 +11,7 @@ Columns {cell}_top{N}_{ranking}:
   pred_weighted_full, pred_unweighted_full, pred_weighted_restricted   the three models, eQTL + other genes
   pip              the FunGen-xQTL fine-mapping (uniform prior), eQTL + other genes: the fine-mapped
                    comparator of pred_weighted_full
-  pip_{prior}      the five fine-mapping priors of step 11, eQTL genes fine-mapped under all five priors
+  pip_{prior}      the five fine-mapping priors of step 10, eQTL genes fine-mapped under all five priors
 
 usage:   python make_annotations_topn.py CHR COHORT [N=5000]
 output:  {sldsc_dir}/top{N}/{cohort}/MLxQTL_chr{CHR}.annot.gz and MLxQTL_chr{CHR}.l2.M

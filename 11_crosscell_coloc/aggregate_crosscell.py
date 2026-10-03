@@ -13,7 +13,7 @@ for genes with scEEMS predictions, which are protein-coding, so a scEEMS prior i
 lncRNA, while the uniform prior is. Left unrestricted, those genes would read as eGenes the scEEMS priors
 lost, when the prior was never evaluated there; restricting makes every prior compare on the same genes.
 
-Credible-set size, top PIP and purity are added from the step 11 credible-set tables
+Credible-set size, top PIP and purity are added from the step 10 credible-set tables
 ({aggregate_dir}/finemapping_comparison/{cell}_{prior}_cs.tsv) when they exist, and the credible-set counts are checked
 against them.
 
@@ -68,7 +68,7 @@ cs = cs.merge(best, on=KEY, how="left").merge(part, on=KEY, how="left")
 cs["n_other_tested"] = cs.n_other_tested.fillna(0).astype(int)
 cs["shared_with"] = cs.shared_with.fillna("")
 cs["shared"] = (cs.max_H4 > H4).fillna(False).astype(int)
-# credible-set size / top PIP / purity from the step 11 credible-set tables, for stratifying
+# credible-set size / top PIP / purity from the step 10 credible-set tables, for stratifying
 meta = []
 for f in glob.glob(f"{CMP}/*_cs.tsv"):
     m = pd.read_csv(f, sep="\t", usecols=["gene_id", "cell_type", "prior_label", "cs_idx", "cs_size", "top_pip", "min_abs_corr"])
@@ -98,11 +98,11 @@ summ["pct_egenes_shared"] = (100 * summ.n_egenes_shared / summ.n_egenes_with_cs)
 summ.to_csv(f"{AGG}/crosscell_summary.tsv", sep="\t", index=False)
 print("\n" + summ.to_string(index=False))
 
-# check: credible-set counts must equal the step 11 credible-set tables
+# check: credible-set counts must equal the step 10 credible-set tables
 if meta:
-    # the step 11 tables cover all genes, so restrict them to protein-coding genes too
+    # the step 10 tables cover all genes, so restrict them to protein-coding genes too
     ref = pd.concat(meta)
     ref = ref[ref.gene_id.isin(pc)].groupby(["prior", "cell"]).size().rename("n_cs_ref")
     chk = summ.set_index(["prior", "cell"]).n_cs.to_frame().join(ref)
     bad = chk[chk.n_cs != chk.n_cs_ref]
-    print("\ncredible-set counts match the step 11 credible-set tables" if bad.empty else f"\nCOUNT MISMATCH:\n{bad}")
+    print("\ncredible-set counts match the step 10 credible-set tables" if bad.empty else f"\nCOUNT MISMATCH:\n{bad}")

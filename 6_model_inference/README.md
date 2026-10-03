@@ -8,7 +8,7 @@ For each gene, `model_inference.py` featurizes the gene's `all_variants` table f
 training (`shared/featurize.py`, with the feature columns and order saved in `feature_cols.pkl`) and
 scores it with the three models that held out the gene's chromosome, so no gene is scored by a model that
 saw its chromosome in training. The `weighted_full` predictions are the scEEMS predictions; the other two
-models' predictions are used as fine-mapping priors in the manuscript's comparisons (step 11).
+models' predictions are used as fine-mapping priors in the manuscript's comparisons (step 10).
 
 Genes are those of `list_genes.csv` (MEGA eQTL genes) and `list_genes_other.csv` (other genes) written by
 step 3: about 7,100 (microglia) to 11,500 (inhibitory neurons) per cell type.

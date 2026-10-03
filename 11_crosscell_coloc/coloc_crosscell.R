@@ -2,9 +2,9 @@
 # Cross-cell-type colocalization of eQTL credible sets for ONE gene, all priors.
 #
 # For every prior, each cell type with at least one credible set for the gene is compared, with
-# coloc.susie on the stored SuSiE fits of step 11 (no refitting), against every other cell type that also
+# coloc.susie on the stored SuSiE fits of step 10 (no refitting), against every other cell type that also
 # has a credible set for the gene under the same prior. Variants are aligned on the canonical keys stored
-# with each fit, as in the eQTL-GWAS colocalization of step 11. One row per (prior, cell, idx, other_cell,
+# with each fit, as in the eQTL-GWAS colocalization of step 10. One row per (prior, cell, idx, other_cell,
 # other_idx) with PP.H0-PP.H4. Every case where nothing can be tested is written as a note row instead of
 # an error, so the aggregation can count it:
 #   "focal credible set"                one row per credible set of (prior, cell): the denominator
@@ -37,7 +37,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 out_tsv <- file.path(out_dir, sprintf("%s.%s.tsv", gene_id, chr_str))
 if (file.exists(out_tsv)) { message("exists, skipping: ", out_tsv); quit(save = "no", status = 0) }
 
-# subset a susie object to variant indices, reindexing $sets (same function as step 11's
+# subset a susie object to variant indices, reindexing $sets (same function as step 10's
 # finemap_and_coloc.R)
 subset_susie_variants <- function(fit, keep_idx) {
   out <- list()

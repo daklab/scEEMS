@@ -2,7 +2,7 @@
 
 Measure how much Alzheimer's disease GWAS heritability the predicted eQTLs explain, with stratified LD score
 regression (S-LDSC, PolyFun's implementation) on top of the baseline-LD model, and select the prediction
-threshold tau* that steps 8 and 10 use to define predicted eQTLs.
+threshold tau* that step 8 uses to define predicted eQTLs.
 
 ## Overview
 
@@ -29,10 +29,10 @@ separate models.
   significant.
 - **Size matching**: enrichment grows as an annotation gets smaller, so the top-5,000 set gives every
   ranking exactly 5,000 variants: the three models, the FunGen-xQTL fine-mapping PIP (`pip`), and the
-  credible sets of the five fine-mapping priors of step 11 (`pip_{prior}`).
+  credible sets of the five fine-mapping priors of step 10 (`pip_{prior}`).
 - **Credible sets**: `{cell}_cs` is every member of a 95% credible set of the FunGen-xQTL fine-mapping
   (eQTL and other genes, no PIP cut); `{cell}_{prior}_cs_pip{00,10,...,50}` are the credible-set members
-  with PIP above 0 (the whole set), 0.10, ..., 0.50 under each prior of step 11, on the eQTL genes
+  with PIP above 0 (the whole set), 0.10, ..., 0.50 under each prior of step 10, on the eQTL genes
   fine-mapped under all five priors.
 
 Predictions are joined to the reference variants on position and alleles (BP, A1 = alternative allele,
@@ -80,7 +80,7 @@ From earlier steps:
 
 - step 7: `{predictions_parquet_dir}/{model}/predictions.parquet` (all three models for the sweep and
   top-N; `weighted_full` for the PIP set)
-- step 11: `{aggregate_dir}/finemapping_comparison/{cell}_{prior}_cs_variants.tsv` and
+- step 10: `{aggregate_dir}/finemapping_comparison/{cell}_{prior}_cs_variants.tsv` and
   `gene_consensus.tsv` (top-N and credible-set sets only)
 
 ## Environments
@@ -113,14 +113,14 @@ sbatch --export=ALL,set=pip/$C run_ldscores.sh
 sbatch --export=ALL,set=pip/$C --array=1 run_ldscore_regression.sh
 python aggregate_prediction_vs_pip.py
 
-# 3. size-matched top 5,000 (needs step 11)
+# 3. size-matched top 5,000 (needs step 10)
 sbatch --export=ALL,cohort=$C run_select_topn.sh
 sbatch --export=ALL,cohort=$C run_annotations_topn.sh
 sbatch --export=ALL,set=top5000/$C run_ldscores.sh
 sbatch --export=ALL,set=top5000/$C --array=1-9 run_ldscore_regression.sh
 python aggregate_topn_sldsc.py
 
-# 4. credible sets (needs step 11)
+# 4. credible sets (needs step 10)
 sbatch --export=ALL,cohort=$C run_annotations_cs.sh
 sbatch --export=ALL,set=cs/$C run_ldscores.sh
 sbatch --export=ALL,set=cs/$C --array=1-31 run_ldscore_regression.sh
@@ -149,7 +149,7 @@ Under `{aggregate_dir}`:
 
 - `tau_star_jackknife.tsv`: every cell type x model x threshold: `Prop._SNPs`, `Prop._h2`, enrichment,
   LDSC coefficient, tau\* with jackknife SE, z and p, h2 and M
-- `tau_star.json`: `{cohort: tau*}`, read by steps 8 and 10
+- `tau_star.json`: `{cohort: tau*}`, read by step 8
 - `prediction_vs_pip_sldsc.tsv`: the predicted (`arm = prediction`, pred_prob > tau\*) and fine-mapped
   (`arm = pip`, PIP > 0.10) eQTL annotations of each cell type, in LDSC's `.results` columns
 - `topn_sldsc.tsv`: the size-matched runs (`arm`, `label`, `ranking`, `gene_set`, LDSC columns)

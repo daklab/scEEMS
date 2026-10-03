@@ -1,6 +1,6 @@
-# Step 12: Cross-Cell-Type Colocalization
+# Step 11: Cross-Cell-Type Colocalization
 
-**This step needs the eQTL SuSiE fits of step 11, which are computed from controlled-access ROSMAP
+**This step needs the eQTL SuSiE fits of step 10, which are computed from controlled-access ROSMAP
 genotype and expression data. It cannot be run from the public data release; the code is provided so the
 analysis can be inspected and rerun by those with data access.** The credible sets themselves are in the
 `fine_mapping/` folder of the data release.
@@ -28,7 +28,7 @@ prior. No model is refitted; variants are aligned on the canonical variant keys 
 
 | Script | Description |
 |--------|-------------|
-| `make_gene_lists.py` | Genes with a step 11 fit (one per array task), and the GENCODE protein-coding gene list |
+| `make_gene_lists.py` | Genes with a step 10 fit (one per array task), and the GENCODE protein-coding gene list |
 | `coloc_crosscell.R` | Cross-cell-type colocalization of one gene, all priors and cell types |
 | `aggregate_crosscell.py` | Per-credible-set, per-eGene and per-cell-type sharing tables |
 | `run_coloc_crosscell.sh` | SLURM array, one task per gene |
@@ -39,7 +39,7 @@ prior. No model is refitted; variants are aligned on the canonical variant keys 
 In the `scEEMS_R` environment (`environment_r.yml` at the top of the repository):
 
 ```bash
-cd 12_crosscell_coloc
+cd 11_crosscell_coloc
 python make_gene_lists.py                                     # prints the array size, e.g. 1-13206
 mkdir -p logs && sbatch --array=1-13206%200 run_coloc_crosscell.sh
 python aggregate_crosscell.py                                 # after the array has finished
@@ -49,10 +49,10 @@ Each task takes well under a minute and about 330 MB of memory.
 
 ## Inputs
 
-- `{finemap_dir}/{cell}/fine_mapping_{prior}/{gene_id}.{chr}.univariate_bvsr.rds`: the step 11 eQTL fits,
+- `{finemap_dir}/{cell}/fine_mapping_{prior}/{gene_id}.{chr}.univariate_bvsr.rds`: the step 10 eQTL fits,
   for cell types Ast, Exc, Inh, Mic, Oli, OPC and priors `uniform`, `scEEMS_Weighted_Full`,
   `scEEMS_Unweighted_Full`, `scEEMS_Weighted_Restricted`
-- `{aggregate_dir}/finemapping_comparison/{cell}_{prior}_cs.tsv` (optional): the step 11 credible-set tables, used to add
+- `{aggregate_dir}/finemapping_comparison/{cell}_{prior}_cs.tsv` (optional): the step 10 credible-set tables, used to add
   credible-set size, top PIP and purity and to check the credible-set counts
 - `gencode_gtf_file`: the GENCODE v45 basic annotation, `gencode.v45.basic.annotation.gtf.gz`, from
   https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/
@@ -74,7 +74,7 @@ Under `{aggregate_dir}`, protein-coding genes only:
 - `crosscell_coloc_pairs.tsv`: all rows of the per-gene tables
 - `crosscell_cs_status.tsv`: one row per credible set (`prior, cell, gene_id, idx`) with `n_other_tested`
   (cell types it was tested against), `max_H4`, `shared_with` (cell types with PP.H4 > 0.8), `shared`
-  (0/1) and, if the step 11 tables are present, `cs_size, min_abs_corr, top_pip`
+  (0/1) and, if the step 10 tables are present, `cs_size, min_abs_corr, top_pip`
 - `crosscell_egene_status.tsv`: one row per (`prior, cell, gene_id`) with `n_cs`, `n_cs_shared`,
   `shared_with` and `shared` (0/1)
 - `crosscell_summary.tsv`: per (`prior, cell`): credible sets and eGenes, the numbers shared, and

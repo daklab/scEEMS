@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 9 on one machine, for one cell type: the four annotation sets, their LD scores and S-LDSC runs, then
-# the result tables. Needs step 7 (all three models) and step 11. The LD scores and S-LDSC runs use the
+# the result tables. Needs step 7 (all three models) and step 10. The LD scores and S-LDSC runs use the
 # PolyFun environment (POLYFUN_ENV, default polyfun) through `conda run`; the rest runs in the current
 # environment. tau_star.py and the aggregation scripts summarize every cell type with results, so rerun
 # them after the last cell type.

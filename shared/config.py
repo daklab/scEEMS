@@ -5,7 +5,7 @@ The file is <repository>/config.yaml unless the SCEEMS_CONFIG environment variab
 Every path setting is a template that may refer to {data_dir}, {release_dir}, {output_dir}, to other
 path settings (e.g. {aggregate_dir}) and, for paths that depend on the cell type, {cohort} (for example
 Mic_mega_eQTL). Settings that config.yaml does not define take the defaults below: inputs come from the scEEMS data release (release_dir, the folder
-downloaded from Synapse) and everything steps 5-12 write goes under output_dir.
+downloaded from Synapse) and everything steps 5-11 write goes under output_dir.
 
     from config import path
     path("train_dir", cohort="Mic_mega_eQTL")   # -> <release_dir>/model_training/train/Mic_mega_eQTL
@@ -34,7 +34,7 @@ DEFAULTS = {
     # ---- outputs of steps 3-4 (needed only to score every variant in step 6) ----
     "all_variants_dir": "{data_dir}/training_data/{cohort}/all_variants",
     "gene_list_dir": "{data_dir}/training_data/{cohort}",
-    # ---- outputs of steps 5-12 ----
+    # ---- outputs of steps 5-11 ----
     "feature_weight_search_dir": "{output_dir}/{cohort}/feature_weight_search",
     "model_dir": "{output_dir}/{cohort}/models",
     "test_predictions_dir": "{output_dir}/{cohort}/test_predictions",
@@ -46,11 +46,9 @@ DEFAULTS = {
     "shap_dir": "{output_dir}/{cohort}/shap",
     "aggregate_dir": "{output_dir}/aggregate_results",
     "scratch_dir": "{output_dir}/scratch",
-    # ---- steps 9-12 ----
+    # ---- steps 9-11 ----
     "susie_pips_dir": "{data_dir}/susie_vars_pips/{cohort}",
     "sldsc_dir": "{output_dir}/sldsc",
-    "magma_dir": "{output_dir}/magma",
-    "noneur_gpn_star_file": "{magma_dir}/noneur_gpn_star/gpn_star_scores_noneur.parquet",
     "finemap_dir": "{output_dir}/fine_mapping",
     "ld_cache_dir": "{finemap_dir}/ld_cache",
     "gwas_cache_dir": "{finemap_dir}/gwas_cache",

@@ -9,7 +9,7 @@
 
 # Genome-wide top-N selection for the size-matched comparison, one job per cell type (the ranking must be
 # genome-wide, so this is not split by chromosome). Needs the step 7 predictions of all three models and
-# the step 11 credible sets:
+# the step 10 credible sets:
 #   sbatch --export=ALL,cohort=Mic_mega_eQTL run_select_topn.sh            (N=5000 by default)
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate scEEMS

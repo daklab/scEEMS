@@ -1,5 +1,5 @@
 #!/bin/bash
-# Step 12 on one machine: gene lists, cross-cell-type colocalization of every gene, aggregation.
+# Step 11 on one machine: gene lists, cross-cell-type colocalization of every gene, aggregation.
 # On a cluster, use run_coloc_crosscell.sh (one SLURM array task per gene) for the middle part.
 set -euo pipefail
 

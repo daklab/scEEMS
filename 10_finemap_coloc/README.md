@@ -1,4 +1,4 @@
-# Step 11: Fine-Mapping with scEEMS Priors and Colocalization with AD GWAS
+# Step 10: Fine-Mapping with scEEMS Priors and Colocalization with AD GWAS
 
 **This step needs controlled-access data.** It fine-maps eQTLs from individual-level ROSMAP genotypes
 and single-nucleus pseudobulk expression, available through the AD Knowledge Portal (Synapse) under a
@@ -72,7 +72,7 @@ Outputs go to `finemap_dir` (fits, coloc results, EMS vectors), `ld_cache_dir`, 
 Every per-gene job skips genes whose output exists, so a resubmitted array reruns only failed genes.
 
 ```bash
-cd 11_finemap_coloc
+cd 10_finemap_coloc
 python prep_gwas_sumstats.py
 sbatch run_snpvar.sh
 sbatch run_build_backing.sh

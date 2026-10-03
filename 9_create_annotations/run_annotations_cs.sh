@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --array=1-22
 
-# Credible-set annotations (31 columns) for one cell type, one task per chromosome. Needs the step 11
+# Credible-set annotations (31 columns) for one cell type, one task per chromosome. Needs the step 10
 # credible sets and the step 1 PIP_top exports:
 #   sbatch --export=ALL,cohort=Mic_mega_eQTL run_annotations_cs.sh
 source "$(conda info --base)/etc/profile.d/conda.sh"

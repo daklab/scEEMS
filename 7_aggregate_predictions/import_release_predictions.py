@@ -2,7 +2,7 @@
 """
 Rebuild the scEEMS (weighted_full) prediction parquet dataset of one cell type from the tabix-indexed
 TSVs of the data release (predictions/{cohort}/predictions_{cohort}_{N}.tsv.gz), so that the scEEMS
-analyses of steps 9-10, which read the parquet dataset, can be run without rerunning steps 5-7.
+analyses of step 9, which read the parquet dataset, can be run without rerunning steps 5-7.
 The values are identical to those of step 7: the TSVs store every float at full precision and are
 parsed back exactly.
 

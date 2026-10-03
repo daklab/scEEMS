@@ -17,7 +17,7 @@ The two column families cover different genes, deliberately:
                                  with no PIP cut on top: a PIP cut would remove whole large credible sets
                                  (in a 50-variant set the mean PIP is 0.02) and keep only small, sharp ones.
 
-  {cell}_{prior}_cs_pip{NN}      30 columns, five fine-mapping priors (step 11) x six PIP thresholds within
+  {cell}_{prior}_cs_pip{NN}      30 columns, five fine-mapping priors (step 10) x six PIP thresholds within
                                  the credible sets: PIP > 0 (pip00, the whole credible set), 0.10, 0.20,
                                  0.30, 0.40 and 0.50. Restricted to the eQTL genes fine-mapped under all
                                  five priors (gene_consensus.tsv, in_all_priors), so a gene missing under

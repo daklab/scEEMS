@@ -1,4 +1,4 @@
-# Shared by the R scripts of step 11: configuration, fine-mapping prior labels, canonical variant keys and
+# Shared by the R scripts of step 10: configuration, fine-mapping prior labels, canonical variant keys and
 # the locations of the eQTL input files.
 #
 #   args_all   <- commandArgs(trailingOnly = FALSE)

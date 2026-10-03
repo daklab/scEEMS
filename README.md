@@ -22,23 +22,21 @@ eQTLs of six cell types (FunGen-xQTL) with leave-one-chromosome-out cross-valida
 
 The predictions are used to:
 - partition Alzheimer's disease heritability with stratified LD score regression (S-LDSC);
-- link variants to genes for eQTL-informed MAGMA gene analysis (eMAGMA), in European and non-European GWAS;
 - serve as priors for eQTL fine-mapping, which is then colocalized with AD GWAS.
 
 ### Changes in the revision
 
 - **GPN-STAR**: the absolute GPN-STAR log-likelihood ratio is a new feature. The scores of all 15.3 million
-  SNVs are in the data release (`model_training/gpn_star/`); `10_magma_analysis/noneur_gpn_star/` shows how
-  variants are scored with the GPN-STAR model.
+  SNVs are in the data release (`model_training/gpn_star/`).
 - **Data-driven feature weights**: instead of a fixed tenfold weight on the DL-VEP features, one CatBoost
   feature weight per feature category is selected for each cell type by a multi-objective Bayesian search
   (step 5), on odd and even chromosomes separately so a held-out chromosome never informs its own weights.
 - **Comparison models**: Unweighted (Full) (all weights 1) and Weighted (Restricted) (trained only on
   positives with PIP > 0.9 in a credible set) are trained alongside scEEMS, Weighted (Full).
-- **Fine-mapping with five priors and colocalization** (step 11): uniform, EMS and the three models' priors,
-  colocalized with the Bellenguez et al. AD GWAS; cross-cell-type sharing of credible sets (step 12).
+- **Fine-mapping with five priors and colocalization** (step 10): uniform, EMS and the three models' priors,
+  colocalized with the Bellenguez et al. AD GWAS; cross-cell-type sharing of credible sets (step 11).
 - **Predicted-eQTL threshold**: the probability cut that defines predicted eQTLs (tau*) is chosen per cell
-  type by S-LDSC (step 9) and used by MAGMA (step 10) and SHAP (step 8).
+  type by S-LDSC (step 9) and used by SHAP (step 8).
 
 ## Pipeline
 
@@ -53,12 +51,11 @@ The predictions are used to:
 | 7 | `7_aggregate_predictions/` | Collect predictions; export or import the released TSVs | **yes** (import/export) |
 | 8 | `8_shap_analysis/` | SHAP attribution by feature category | no: step 3 tables |
 | 9 | `9_create_annotations/` | S-LDSC heritability of predicted eQTLs; tau* | partly: the scEEMS threshold sweep, tau* and the PIP > 0.10 comparison, with LDSC reference data |
-| 10 | `10_magma_analysis/` | eMAGMA gene analysis, European and non-European GWAS | partly (see its README) |
-| 11 | `11_finemap_coloc/` | eQTL fine-mapping with five priors; colocalization with AD GWAS | no: controlled-access genotypes (outputs are in the release) |
-| 12 | `12_crosscell_coloc/` | Sharing of eQTL credible sets between cell types | no: step 11 fits |
+| 10 | `10_finemap_coloc/` | eQTL fine-mapping with five priors; colocalization with AD GWAS | no: controlled-access genotypes (outputs are in the release) |
+| 11 | `11_crosscell_coloc/` | Sharing of eQTL credible sets between cell types | no: step 10 fits |
 
 Each step directory has a `README.md` (method, inputs, how to run, outputs) and SLURM scripts. Steps 1-4,
-6, 8, 11 and 12 need inputs that are not in the data release (controlled-access genotype and expression
+6, 8, 10 and 11 need inputs that are not in the data release (controlled-access genotype and expression
 data, or intermediate feature tables of several terabytes); their code documents exactly how the released
 data and results were produced.
 
@@ -69,7 +66,7 @@ The data release is on Synapse in folder [syn69670587](https://www.synapse.org/S
 | Folder | Content | Used by |
 |---|---|---|
 | `model_training/` | `train/`, `train_restricted/` and `test/` sets per cell type; `gpn_star/` (GPN-STAR scores); `feature_weights/` (selected weights); `gnomad_MAF/`, `gene_lof/`, `columns_dict/`; `model_features.tsv` | step 5 |
-| `predictions/` | scEEMS predictions per cell type and chromosome (tabix-indexed TSV) | steps 9-10, your own analyses |
+| `predictions/` | scEEMS predictions per cell type and chromosome (tabix-indexed TSV) | step 9, your own analyses |
 | `fine_mapping/` | Credible sets of the five fine-mapping priors per cell type and chromosome (tabix-indexed TSV) | your own analyses |
 
 Each folder has a README describing its files and columns. Download with the helper script (Synapse account
@@ -88,23 +85,23 @@ Files go to `paths.release_dir` with the release's folder layout, which is where
 ```bash
 git clone https://github.com/daklab/scEEMS.git
 cd scEEMS
-conda env create -f environment.yml       # Python environment, steps 1-10
+conda env create -f environment.yml       # Python environment, steps 1-9
 conda activate scEEMS
 cp config.yaml.example config.yaml        # then set release_dir, output_dir and any inputs you need
 ```
 
 `environment.yml` pins the versions used for the manuscript (installation takes about 10 minutes);
 `conda_environment_full.txt` lists the full environment used to train and score the models. The
-fine-mapping and colocalization steps (11-12) use R 4.5 in a second environment, `environment_r.yml`, plus
+fine-mapping and colocalization steps (10-11) use R 4.5 in a second environment, `environment_r.yml`, plus
 seven R packages that are not on conda, installed by `install_r_packages.R` (see the header of either file).
 
 ### System requirements
 
-- Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for steps 11-12 (`environment_r.yml`)
-- No GPU, except for the optional GPN-STAR scoring of non-European variants in step 10
+- Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for steps 10-11 (`environment_r.yml`)
+- No GPU
 - Step 5: 10 CPU cores and 12 GB (microglia) to 60 GB (excitatory neurons) of memory per held-out
   chromosome, 10-30 minutes each
-- External tools for specific steps: PolyFun/LDSC (step 9), MAGMA v1.10 (step 10); see each step's README
+- External tools for specific steps: PolyFun/LDSC (steps 9 and 10); see each step's README
 
 ## Configuration
 

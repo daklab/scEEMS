@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Collect one model's per-gene prediction tables (step 6) into a single parquet dataset partitioned by
-chromosome, the input of steps 8-12 and of the TSV export (extract_predictions_tsv.py).
+chromosome, the input of steps 8-11 and of the TSV export (extract_predictions_tsv.py).
 
 usage:   python create_parquet_scored.py COHORT [MODEL]
          MODEL: weighted_full (default), unweighted_full or weighted_restricted

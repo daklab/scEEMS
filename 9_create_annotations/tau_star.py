@@ -25,7 +25,7 @@ usage:   python tau_star.py [COHORT ...]              (default: all six cell typ
 outputs: {aggregate_dir}/tau_star_jackknife.tsv       one row per cell type, model and threshold
          {aggregate_dir}/tau_star.json                {cohort: selected threshold}, for every cell type
                                                       whose 20-threshold sweep is complete; read by
-                                                      steps 8 and 10 and by aggregate_prediction_vs_pip.py
+                                                      step 8 and by aggregate_prediction_vs_pip.py
 """
 import glob
 import json

@@ -18,7 +18,7 @@ event), so each model is ranked on its own scores; rankings are never pooled acr
 Rankings (maximum over genes per variant in every case):
   pred_weighted_full, pred_unweighted_full, pred_weighted_restricted   the three models, eQTL + other genes
   pip                   the FunGen-xQTL fine-mapping PIP, eQTL + other genes
-  pip_{prior}           the credible-set members of each fine-mapping prior (step 11), eQTL genes that
+  pip_{prior}           the credible-set members of each fine-mapping prior (step 10), eQTL genes that
                         were fine-mapped under all five priors
 
 usage:   python select_topn.py COHORT [N=5000]

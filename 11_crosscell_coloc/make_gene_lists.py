@@ -2,7 +2,7 @@
 """
 The two gene lists of the cross-cell-type colocalization:
 
-  genes.tsv                 every gene with an eQTL fine-mapping fit (step 11) in any cell type under any of
+  genes.tsv                 every gene with an eQTL fine-mapping fit (step 10) in any cell type under any of
                             the four priors compared here (gene_id, chr; no header). One row per SLURM array
                             task of run_coloc_crosscell.sh.
   protein_coding_genes.txt  GENCODE protein-coding gene IDs (without version), from the GENCODE v45 basic
