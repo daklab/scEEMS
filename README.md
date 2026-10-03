@@ -120,7 +120,7 @@ Path settings are templates that may refer to `{release_dir}`, `{output_dir}`, `
 settings and `{cohort}`; anything not set in `config.yaml` takes the default in `shared/config.py`
 (inputs from the data release, outputs under `output_dir`). `config.yaml.example` lists every setting.
 
-## Quick start: reproduce a microglia model
+## Quick start: train a microglia model
 
 ```bash
 python download_synapse_data.py --resource model_training --cell-type Mic
@@ -130,8 +130,7 @@ python train_loco.py Mic_mega_eQTL 1
 
 This trains the three microglia models with chromosome 1 held out (10-20 minutes with 10 CPU cores) and
 scores the chromosome 1 test set: 242 variant-gene pairs, AUPRC 0.8015 for scEEMS (`weighted_full`), 0.7555
-for Unweighted (Full) and 0.7499 for Weighted (Restricted). Models trained from the data release reproduce
-the published models exactly (see `5_model_training/README.md` for the one exception).
+for Unweighted (Full) and 0.7499 for Weighted (Restricted).
 
 ## Cell types
 
