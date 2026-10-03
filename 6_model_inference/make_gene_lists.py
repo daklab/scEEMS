@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 List every gene to score for each cell type: the genes of list_genes.csv (MEGA eQTL genes) and
-list_genes_other.csv (other genes), both written by step 3 and both featurized in all_variants/.
+list_genes_other.csv (other genes), the two gene lists whose all_variants tables step 3 builds.
 Prints the number of genes, which is the size of the SLURM array for run_inference.sh.
 
 usage:   python make_gene_lists.py [COHORT ...]          (default: all six cell types)

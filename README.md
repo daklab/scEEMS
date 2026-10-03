@@ -12,7 +12,7 @@ Jager, The Alzheimer's Disease Functional Genomics Consortium, Gao Wang, David A
 
 ## Overview
 
-single-cell Enhanced Expression Modifier Scores (scEEMS) are CatBoost models that predict, for six brain
+scEEMS (single-cell Enhanced Expression Modifier Scores) are CatBoost models that predict, for six brain
 cell types, the probability that a variant is a causal eQTL for a gene. Each variant-gene pair is described
 by 4,840 features: deep learning variant effect predictions (Enformer, BPNet, ChromBPNet and composite
 transcription factor scores), the GPN-STAR DNA language model score, Activity-by-Contact (ABC) scores, cell
@@ -54,8 +54,8 @@ The predictions are used to:
 | 10 | `10_finemap_coloc/` | eQTL fine-mapping with five priors; colocalization with AD GWAS | no: controlled-access genotypes (outputs are in the release) |
 | 11 | `11_crosscell_coloc/` | Sharing of eQTL credible sets between cell types | no: step 10 fits |
 
-Each step directory has a `README.md` (method, inputs, how to run, outputs) and SLURM scripts. Steps 1-4,
-6, 8, 10 and 11 need inputs that are not in the data release (controlled-access genotype and expression
+Each step directory has a `README.md` (method, inputs, how to run, outputs); steps 5-11 also have SLURM job
+scripts. Steps 1-4, 6, 8, 10 and 11 need inputs that are not in the data release (controlled-access genotype and expression
 data, or intermediate feature tables of several terabytes); their code documents exactly how the released
 data and results were produced.
 
@@ -85,23 +85,24 @@ Files go to `paths.release_dir` with the release's folder layout, which is where
 ```bash
 git clone https://github.com/daklab/scEEMS.git
 cd scEEMS
-conda env create -f environment.yml       # Python environment, steps 1-9
+conda env create -f environment.yml       # Python environment
 conda activate scEEMS
 cp config.yaml.example config.yaml        # then set release_dir, output_dir and any inputs you need
 ```
 
 `environment.yml` pins the versions used for the manuscript (installation takes about 10 minutes);
-`conda_environment_full.txt` lists the full environment used to train and score the models. The
-fine-mapping and colocalization steps (10-11) use R 4.5 in a second environment, `environment_r.yml`, plus
+`conda_environment_full.txt` lists the full environment used to train and score the models. The R scripts
+(step 1's `get_vars_pips.R` and steps 10-11) use R 4.5 in a second environment, `environment_r.yml`, plus
 seven R packages that are not on conda, installed by `install_r_packages.R` (see the header of either file).
 
 ### System requirements
 
-- Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for steps 10-11 (`environment_r.yml`)
+- Linux (tested on Ubuntu 22.04), Python 3.9 (`environment.yml`), R 4.5 for the R scripts (`environment_r.yml`)
 - No GPU
 - Step 5: 10 CPU cores and 12 GB (microglia) to 60 GB (excitatory neurons) of memory per held-out
   chromosome, 10-30 minutes each
-- External tools for specific steps: PolyFun/LDSC (steps 9 and 10); see each step's README
+- External tools for specific steps: PolyFun/LDSC (steps 9 and 10, in its own conda environment with
+  `pyyaml` added); see each step's README
 
 ## Configuration
 

@@ -1,6 +1,6 @@
 """
 Download the scEEMS data release from Synapse into paths.release_dir (config.yaml), keeping the release's
-folder layout, which is where steps 5-11 look for it.
+folder layout, which is where the pipeline looks for it.
 
 The release folder (default syn69670587) contains:
   model_training/  training and test data, GPN-STAR scores, selected feature weights, supporting files
@@ -16,7 +16,7 @@ Usage:
 
 Authentication: a Synapse personal access token from config.yaml (credentials.synapse_token) or the
 SYNAPSE_AUTH_TOKEN environment variable; otherwise synapseclient's own login (e.g. ~/.synapseConfig).
-Listing (--dry-run) works without logging in.
+Listing (--dry-run) needs neither a login nor a config.yaml.
 """
 import argparse
 import os
@@ -31,7 +31,10 @@ CELL_DIR = re.compile(r"^(Ast|Exc|Inh|Mic|Oli|OPC)_mega_eQTL$")
 
 
 def load_config():
+    """config.yaml at the top of the repository, or the file named by SCEEMS_CONFIG; empty if there is none."""
     path = os.environ.get("SCEEMS_CONFIG", os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml"))
+    if not os.path.exists(path):
+        return {}
     with open(path) as fh:
         return yaml.safe_load(fh) or {}
 
@@ -59,9 +62,9 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="list the files, download nothing")
     args = ap.parse_args()
 
-    config = {} if (args.output_dir and args.dry_run) else load_config()
-    out_dir = args.output_dir or config.get("paths", {}).get("release_dir")
-    if not out_dir:
+    config = load_config()
+    out_dir = args.output_dir or (config.get("paths") or {}).get("release_dir")
+    if not out_dir and not args.dry_run:
         raise SystemExit("set paths.release_dir in config.yaml or pass --output-dir")
 
     syn = synapseclient.Synapse(silent=True)

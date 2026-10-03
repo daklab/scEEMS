@@ -1,9 +1,10 @@
 # Step 11: Cross-Cell-Type Colocalization
 
 **This step needs the eQTL SuSiE fits of step 10, which are computed from controlled-access ROSMAP
-genotype and expression data. It cannot be run from the public data release; the code is provided so the
-analysis can be inspected and rerun by those with data access.** The credible sets themselves are in the
-`fine_mapping/` folder of the data release.
+genotype and expression data that are not part of the data release, so it cannot be run from the data
+release.** The code documents how the manuscript's cross-cell-type results were computed, and reproduces
+them for anyone with access to those data. The credible sets themselves are in the `fine_mapping/` folder
+of the data release.
 
 ## Overview
 

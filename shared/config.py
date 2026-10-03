@@ -1,11 +1,12 @@
 """
-Settings for steps 5 onward, read from config.yaml.
+Settings of every step of the pipeline, read from config.yaml.
 
 The file is <repository>/config.yaml unless the SCEEMS_CONFIG environment variable names another one.
 Every path setting is a template that may refer to {data_dir}, {release_dir}, {output_dir}, to other
 path settings (e.g. {aggregate_dir}) and, for paths that depend on the cell type, {cohort} (for example
-Mic_mega_eQTL). Settings that config.yaml does not define take the defaults below: inputs come from the scEEMS data release (release_dir, the folder
-downloaded from Synapse) and everything steps 5-11 write goes under output_dir.
+Mic_mega_eQTL). Settings that config.yaml does not define take the defaults below: steps 1-4 read and
+write under data_dir, steps 5-11 read the scEEMS data release (release_dir, the folder downloaded from
+Synapse) and write everything under output_dir.
 
     from config import path
     path("train_dir", cohort="Mic_mega_eQTL")   # -> <release_dir>/model_training/train/Mic_mega_eQTL
@@ -31,9 +32,13 @@ DEFAULTS = {
     "gpn_star_file": "{release_dir}/model_training/gpn_star/gpn_star_scores_all.parquet",
     "feature_weights_file": "{release_dir}/model_training/feature_weights/best_configs_{cohort}.json",
     "release_predictions_dir": "{release_dir}/predictions/{cohort}",
-    # ---- outputs of steps 3-4 (needed only to score every variant in step 6) ----
+    # ---- steps 1-4: inputs and outputs of the featurization (not in the data release) ----
+    "finemapping_rds_dir": "{data_dir}/release_04_2024",
+    "susie_dir": "{data_dir}/susie_vars_pips",
+    "variant_list_dir": "{susie_dir}/variant_list",
     "all_variants_dir": "{data_dir}/training_data/{cohort}/all_variants",
     "gene_list_dir": "{data_dir}/training_data/{cohort}",
+    "training_sets_dir": "{data_dir}/training_data/{cohort}/training_data",
     # ---- outputs of steps 5-11 ----
     "feature_weight_search_dir": "{output_dir}/{cohort}/feature_weight_search",
     "model_dir": "{output_dir}/{cohort}/models",
@@ -47,7 +52,7 @@ DEFAULTS = {
     "aggregate_dir": "{output_dir}/aggregate_results",
     "scratch_dir": "{output_dir}/scratch",
     # ---- steps 9-11 ----
-    "susie_pips_dir": "{data_dir}/susie_vars_pips/{cohort}",
+    "susie_pips_dir": "{susie_dir}/{cohort}",
     "sldsc_dir": "{output_dir}/sldsc",
     "finemap_dir": "{output_dir}/fine_mapping",
     "ld_cache_dir": "{finemap_dir}/ld_cache",

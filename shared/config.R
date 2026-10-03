@@ -1,4 +1,5 @@
-# Settings for the R scripts of steps 10-11, read from config.yaml: the R counterpart of shared/config.py.
+# Settings for the R scripts (steps 1, 10 and 11), read from config.yaml: the R counterpart of
+# shared/config.py.
 #
 # The file is <repository>/config.yaml unless the SCEEMS_CONFIG environment variable names another one.
 # Path settings are templates that may refer to {data_dir}, {release_dir}, {output_dir}, other path

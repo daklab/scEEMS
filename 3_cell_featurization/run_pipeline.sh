@@ -1,24 +1,21 @@
 #!/bin/bash
-# Step 3: Cell Featurization
-# Create per-gene feature matrices for each cohort.
-# This step is parallelized per gene.
-
-set -e
-
-echo "=== Step 3: Cell Featurization ==="
-
+# Step 3 on one machine, for one cell type: list its genes, then build the feature table of every gene, those
+# fine-mapped by the MEGA analysis (F) and the "other" genes (T). There are 7,000-11,500 genes per cell type;
+# on a cluster, run create_gene_datasets.py as an array job, one task per gene.
+#   bash run_pipeline.sh Mic_mega_eQTL
+set -eo pipefail
+cd "$(dirname "$0")"
 COHORT=${1:-Mic_mega_eQTL}
-OTHER=${2:-F}
 
-# Count number of genes
-GENE_LIST="../data/training_data/${COHORT}/list_genes.csv"
-NUM_GENES=$(tail -n +2 "$GENE_LIST" | wc -l)
-
-echo "Processing ${NUM_GENES} genes for cohort ${COHORT}..."
-
-for i in $(seq 1 $NUM_GENES); do
-    echo "Gene ${i}/${NUM_GENES}..."
-    python create_gene_datasets.py $i $COHORT $OTHER
+python create_gene_lists.py "$COHORT"
+for mode in F T; do
+    N=$(python -c "
+import os, sys
+sys.path.insert(0, '../shared')
+from config import cohort_name, path
+f = os.path.join(path('gene_list_dir', cohort=cohort_name('$COHORT')), 'list_genes.csv' if '$mode' == 'F' else 'list_genes_other.csv')
+print(sum(1 for _ in open(f)) - 1 if os.path.exists(f) else 0)")
+    for i in $(seq 1 "$N"); do
+        python create_gene_datasets.py "$i" "$COHORT" "$mode"
+    done
 done
-
-echo "=== Step 3 Complete ==="

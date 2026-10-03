@@ -39,6 +39,33 @@ Predictions are joined to the reference variants on position and alleles (BP, A1
 A2 = reference allele). pred_prob is not on the same scale across models (the weighted_restricted model
 predicts a much rarer event), so models are never pooled into one ranking.
 
+## What runs from the data release
+
+The scEEMS (`weighted_full`) part of this step runs from the data release: its threshold sweep, tau\* and
+the comparison with the fine-mapped eQTLs (PIP > 0.10; the PIPs are in the released predictions). It also
+needs the LDSC reference data listed under Inputs, which are not part of the data release. For one cell
+type (chain the jobs with `--dependency=afterok:<jobid>`, or wait for each to finish):
+
+```bash
+C=Mic_mega_eQTL
+python 7_aggregate_predictions/import_release_predictions.py $C      # from the top of the repository
+cd 9_create_annotations
+sbatch --export=ALL,cohort=$C,model=weighted_full run_annotations.sh
+sbatch --export=ALL,set=pareto/${C}_weighted_full run_ldscores.sh
+sbatch --export=ALL,set=pareto/${C}_weighted_full --array=1-20 run_ldscore_regression.sh
+sbatch --export=ALL,cohort=$C run_annotations_pip.sh
+sbatch --export=ALL,set=pip/$C run_ldscores.sh
+sbatch --export=ALL,set=pip/$C --array=1 run_ldscore_regression.sh
+python tau_star.py
+python aggregate_prediction_vs_pip.py
+```
+
+The rest cannot be run from the data release: the sweeps of the two comparison models need their
+predictions (steps 6-7, which need the step 3 feature tables), the size-matched top-5,000 comparison and the
+credible-set annotations need the fine-mapping results of step 10, which come from controlled-access
+data, and the `{cell}_cs` column needs the step 1 fine-mapping exports. Their code documents how the
+manuscript's results were computed.
+
 ## Scripts
 
 | Script | Description |
@@ -86,19 +113,19 @@ From earlier steps:
 ## Environments
 
 The builders, `tau_star.py` and the aggregation scripts run in the `scEEMS` environment.
-`compute_ldscores.py` and `ldscore_regression.py` run in the PolyFun environment, with `pyyaml` added
-(`pip install pyyaml`) because they read `config.yaml`.
+`compute_ldscores.py` and `ldscore_regression.py` run in the PolyFun environment (`POLYFUN_ENV`, default
+`polyfun`), with `pyyaml` added (`pip install pyyaml`) because they read `config.yaml`.
 
-## Running
+## Running the full analysis
 
-For one cell type on SLURM (chain the jobs with `--dependency=afterok:<jobid>`, or wait for each to
-finish):
+For one cell type on SLURM, with the predictions of all three models (step 7) and the step 10 results
+(chain the jobs with `--dependency=afterok:<jobid>`, or wait for each to finish):
 
 ```bash
 cd 9_create_annotations
 C=Mic_mega_eQTL
 
-# 1. threshold sweep of the three models, then tau* (after all six cell types)
+# 1. threshold sweep of the three models, then tau* (tau_star.py summarizes every cell type with results)
 for m in weighted_full unweighted_full weighted_restricted; do
     sbatch --export=ALL,cohort=$C,model=$m run_annotations.sh; done
 for m in weighted_full unweighted_full weighted_restricted; do
@@ -132,10 +159,6 @@ python aggregate_cs_sldsc.py
 LD scores take from about 75 minutes (chromosome 22, 8 cores) to most of a day per chromosome
 (chromosome 6, the MHC, is the slowest) and up to about 16 GB of memory. Each S-LDSC run takes 15-35
 minutes and up to 60 GB of memory.
-
-The `weighted_full` parts (its threshold sweep, tau\* and the PIP comparator) can be run from the data
-release: rebuild the `weighted_full` prediction dataset with
-`7_aggregate_predictions/import_release_predictions.py`.
 
 ## Outputs
 

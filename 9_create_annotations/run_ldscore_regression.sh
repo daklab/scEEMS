@@ -13,9 +13,9 @@
 #   sbatch --export=ALL,set=pip/Mic_mega_eQTL --array=1 run_ldscore_regression.sh
 #   sbatch --export=ALL,set=top5000/Mic_mega_eQTL --array=1-9 run_ldscore_regression.sh
 #   sbatch --export=ALL,set=cs/Mic_mega_eQTL --array=1-31 run_ldscore_regression.sh
-# Runs in the PolyFun environment.
+# Runs in the PolyFun environment (POLYFUN_ENV, default polyfun).
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate polyfun
+conda activate "${POLYFUN_ENV:-polyfun}"
 cd "${SLURM_SUBMIT_DIR}"
 
 python -u ldscore_regression.py "${set}" "${SLURM_ARRAY_TASK_ID}"

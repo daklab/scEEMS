@@ -1,21 +1,27 @@
 """
-Create per-gene feature matrices with cell-type-specific annotations.
+Build the feature table of one gene: every variant of the gene's cis window with its fine-mapping PIP and
+features.
 
-For each gene, combines variant annotations with:
-- ABC (Activity-By-Contact) enhancer-gene scores
-- ChromBPNet cell-type-specific variant effect scores
-- TF binding score summaries
-- Distance to TSS
+For each variant, combines the variant annotations of step 2 with:
+- ABC (Activity-By-Contact) scores of the gene's enhancer-gene links in four brain cell types
+- ChromBPNet variant effect scores (maximum, minimum and maximum absolute value per assay)
+- composite TF scores (maximum, minimum and maximum absolute Enformer ChIP score over each cell type's TFs)
+- distance to the gene's TSS
 
 Usage:
-    python create_gene_datasets.py <gene_index> <cohort> <other_flag>
+    python create_gene_datasets.py <gene_index> <cohort> <F|T>
 
 Arguments:
-    gene_index: 1-based index into gene list
-    cohort: Cell type cohort (e.g., Mic_mega_eQTL)
-    other_flag: "F" for primary genes, "T" for other-ethnicity genes
+    gene_index: 1-based row of the gene list
+    cohort:     cell type, e.g. Mic_mega_eQTL (or Mic)
+    F|T:        F for the genes fine-mapped by the cell type's MEGA eQTL analysis (list_genes.csv), T for its
+                "other" genes, fine-mapped only by its DeJager or Kellis analysis (list_genes_other.csv;
+                1_process_datasets/create_parquet_files_other.py)
 
-Requires config.yaml with paths configured.
+Inputs:   {gene_list_dir}/list_genes.csv or list_genes_other.csv (create_gene_lists.py),
+          {susie_pips_dir}/PIP_all_parquet or PIP_all_other_parquet (step 1), the annotated variants of
+          step 2 in {variant_list_dir}, abc_data_dir, chrombpnet_dir, tf_file, targets_file
+Output:   {all_variants_dir}/<gene_id>/annotated_data_<cohort>_<chr>.parquet
 """
 
 import os
@@ -26,22 +32,20 @@ from dask.diagnostics import ProgressBar
 from tqdm import tqdm
 import numpy as np
 import dask
-import yaml
 import shutil
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+from config import cohort_name, path
 
 ProgressBar().register()
 tqdm.pandas()
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-
 gene_idx = int(sys.argv[1]) - 1
-cohort = sys.argv[2]
+cohort = cohort_name(sys.argv[2])
 other = sys.argv[3]
+assert other in ("F", "T"), "the third argument must be F (MEGA genes) or T (other genes)"
 
-data_dir = config['paths']['data_dir']
-scratch_dir = config['paths'].get('scratch_dir', '/tmp')
+scratch_dir = path("scratch_dir")
 
 # Set up temporary directory for dask
 temp_dir = os.path.join(scratch_dir, f'{cohort}_{other}_gene_{gene_idx}')
@@ -51,10 +55,10 @@ dask.config.set({'temporary_directory': temp_dir})
 ##############################################################################################################
 # TF list setup
 
-TF_file = config['paths']['tf_file']
+TF_file = path("tf_file")
 TF_df = pd.read_csv(TF_file, sep='\t', skiprows=1)
 
-targets_txt = config['paths']['targets_file']
+targets_txt = path("targets_file")
 df_targets = pd.read_csv(targets_txt, sep='\t')
 
 df_targets_subset = df_targets[df_targets['sum_stat'].str.contains("mean")]
@@ -110,19 +114,19 @@ all_TF_columns_diff_32 = list(set([f'diff_32_{i}' for i in all_TF_columns]))
 ##############################################################################################################
 # Load gene information
 
-susie_dir = os.path.join(data_dir, 'susie_vars_pips')
-variant_list = os.path.join(susie_dir, 'variant_list')
+pips_dir = path("susie_pips_dir", cohort=cohort)
+variant_list = path("variant_list_dir")
 
 if other == "F":
-    gene_list_path = os.path.join(data_dir, f'training_data/{cohort}/list_genes.csv')
+    gene_list_path = os.path.join(path("gene_list_dir", cohort=cohort), 'list_genes.csv')
 elif other == "T":
-    gene_list_path = os.path.join(data_dir, f'training_data/{cohort}/list_genes_other.csv')
+    gene_list_path = os.path.join(path("gene_list_dir", cohort=cohort), 'list_genes_other.csv')
 
 genes_df = pd.read_csv(gene_list_path, sep="\t")
 gene = genes_df.iloc[gene_idx]["gene_id"]
 chr_val = genes_df.iloc[gene_idx]["chr"]
 
-abc_data_dir = config['paths']['abc_data_dir']
+abc_data_dir = path("abc_data_dir")
 gene_id_gene_name_df = pd.read_csv(f'{abc_data_dir}/ABC_gene_id_name_mapping.csv', sep=',')
 gene_id_gene_name_df = gene_id_gene_name_df[gene_id_gene_name_df['gene_id'] == gene]
 gene_list_gene_id = gene_id_gene_name_df['gene_name'].tolist()
@@ -131,10 +135,10 @@ gene_list_gene_id = gene_id_gene_name_df['gene_name'].tolist()
 # Load PIP data
 
 if other == "F":
-    all_parquet_dir = f'{susie_dir}/{cohort}/PIP_all_parquet'
+    all_parquet_dir = f'{pips_dir}/PIP_all_parquet'
     all_parquet_df = dd.read_parquet(f'{all_parquet_dir}/PIP_all.parquet/chr={chr_val}', engine='pyarrow')
 elif other == "T":
-    all_parquet_dir = f'{susie_dir}/{cohort}/PIP_all_other_parquet'
+    all_parquet_dir = f'{pips_dir}/PIP_all_other_parquet'
     all_parquet_df = dd.read_parquet(f'{all_parquet_dir}/PIP_all_other.parquet/chr={chr_val}', engine='pyarrow')
 
 all_parquet_df = all_parquet_df[['variant_id', 'chr', 'pos', 'ref', 'alt', 'gene_id', 'pip']].reset_index(drop=True)
@@ -181,7 +185,7 @@ abc_files = [f'{abc_data_dir}/ABC_results_{f}_v2/{f}/Predictions/EnhancerPredict
              for f in abc_names]
 abc_dfs = [pd.read_csv(f, sep='\t') for f in abc_files]
 
-chrombpnet_dir = config['paths']['chrombpnet_dir']
+chrombpnet_dir = path("chrombpnet_dir")
 chrombpnet_dfs_dict = {
     f: pd.read_csv(f'{chrombpnet_dir}/chrombpnet_{f}_{chr_val}_variant_peak_pairs_scored.csv', sep='\t')
     for f in abc_names
@@ -311,7 +315,7 @@ training_data_df = training_data_df.persist()
 ##############################################################################################################
 # Save output
 
-output_dir = os.path.join(data_dir, f'training_data/{cohort}/all_variants')
+output_dir = path("all_variants_dir", cohort=cohort)
 os.makedirs(output_dir, exist_ok=True)
 
 write_dir = os.path.join(output_dir, gene)

@@ -10,8 +10,8 @@ scores it with the three models that held out the gene's chromosome, so no gene 
 saw its chromosome in training. The `weighted_full` predictions are the scEEMS predictions; the other two
 models' predictions are used as fine-mapping priors in the manuscript's comparisons (step 10).
 
-Genes are those of `list_genes.csv` (MEGA eQTL genes) and `list_genes_other.csv` (other genes) written by
-step 3: about 7,100 (microglia) to 11,500 (inhibitory neurons) per cell type.
+Genes are those of `list_genes.csv` (MEGA eQTL genes) and `list_genes_other.csv` (other genes), the gene
+lists step 3 featurizes: about 7,100 (microglia) to 11,500 (inhibitory neurons) per cell type.
 
 This step needs the per-gene `all_variants` tables of step 3, which are not part of the data release
 (tens of terabytes). The released predictions (`predictions/`) are this step's output for `weighted_full`,
@@ -42,9 +42,10 @@ Each task takes about a minute; the largest genes need up to 30 GB of memory.
 
 ## Inputs
 
-- `{model_dir}`: the 66 models of step 5 (`{model}_chr{N}.joblib`) and `feature_cols.pkl`
+- `{model_dir}`: the models of step 5 (`{model}_chr{N}.joblib`, three per held-out chromosome) and
+  `feature_cols.pkl`
 - `{all_variants_dir}/{gene_id}/`: per-gene feature tables from step 3
-- `{gene_list_dir}/list_genes.csv`, `list_genes_other.csv`: from step 3
+- `{gene_list_dir}/list_genes.csv`, `list_genes_other.csv`: the gene lists of step 3
 - the GPN-STAR, gnomAD MAF, gene constraint and columns dictionary files of the data release
 
 ## Outputs

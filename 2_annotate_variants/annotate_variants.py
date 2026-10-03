@@ -1,19 +1,19 @@
 """
-Annotate variants with genomic features.
+Annotate the unique variants of one chromosome (step 1) with the variant-level features.
 
-Merges variant lists with:
-- Enformer variant effect predictions
-- Brain cell-type ATAC-seq/histone BED annotations
-- Baseline genomic annotations
-- Transcription factor binding site scores
+Merges the variant list with:
+- Enformer variant effect predictions (CAGE tracks dropped)
+- brain cell type ATAC-seq, promoter and enhancer BED annotations (bed_annotations_dir)
+- baseline genomic annotations (baseline_annotations_dir)
+- composite transcription factor scores: the maximum Enformer ChIP score over each cell type's TFs, and
+  its product with the cell type's promoter/enhancer/ATAC annotation
 
 Usage:
-    python annotate_variants.py <chromosome_number>
+    python annotate_variants.py <chromosome_number>        (1-22)
 
-Arguments:
-    chromosome_number: Integer chromosome number (1-22)
-
-Requires config.yaml with paths configured.
+Inputs:  {variant_list_dir}/variant_list_chr{N}.parquet, {enformer_dir}/enformer_tensorflow_chr{N}.parquet,
+         the BED files, tf_file and targets_file (see README.md)
+Output:  {variant_list_dir}/annotated_variants/annotated_variants_chr{N}.parquet
 """
 
 import os
@@ -25,16 +25,13 @@ from tqdm import tqdm
 import numpy as np
 from pybedtools import BedTool
 import dask
-import yaml
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+from config import path
 
 ProgressBar().register()
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-
-data_dir = config['paths']['data_dir']
-scratch_dir = config['paths'].get('scratch_dir', '/tmp')
+scratch_dir = path("scratch_dir")
 dask.config.set({'temporary_directory': scratch_dir})
 
 
@@ -55,7 +52,7 @@ def merge_beds(snp_list_df, bed_list, bed_directory):
     full_df = snp_list_df
     bimbed = BedTool(iter_bim)
     for col_name, file_name in bed_list.items():
-        bed_for_annot = BedTool(bed_directory + file_name)
+        bed_for_annot = BedTool(os.path.join(bed_directory, file_name))
         annotbed = bimbed.intersect(bed_for_annot)
         bp = [x.start + 1 for x in annotbed]
         df_int = pd.DataFrame({'BP': bp, 'ANNOT': 1})
@@ -101,10 +98,10 @@ def multiply_row(row, col1, col2):
 ##############################################################################################################
 # TF list setup
 
-TF_file = config['paths']['tf_file']
+TF_file = path("tf_file")
 TF_df = pd.read_csv(TF_file, sep='\t', skiprows=1)
 
-targets_txt = config['paths']['targets_file']
+targets_txt = path("targets_file")
 df_targets = pd.read_csv(targets_txt, sep='\t')
 
 df_targets_cage = df_targets[df_targets['description'].str.contains("CAGE")]
@@ -154,7 +151,7 @@ columns_all_TF = meta_columns + all_TF_columns_diff_32
 ##############################################################################################################
 # Brain ATAC-seq/histone BED annotations
 
-beds_dir = config['paths']['bed_annotations_dir']
+beds_dir = path("bed_annotations_dir")
 
 bed_list = {
     'astrocyte_atac': 'LHX2_optimal_peak_IDR_ENCODE.ATAC.bed',
@@ -202,9 +199,8 @@ bed_list = {
 ##############################################################################################################
 # Main annotation logic
 
-data_directory = os.path.join(data_dir, 'susie_vars_pips')
-enformer_dir = config['paths']['enformer_dir']
-variant_list = os.path.join(data_directory, 'variant_list')
+enformer_dir = path("enformer_dir")
+variant_list = path("variant_list_dir")
 
 chr_num = sys.argv[1]
 
@@ -236,7 +232,7 @@ brain_atac_df = merge_beds(annotation_df_variants_only, bed_list, beds_dir)
 ##############################################################################################################
 # Baseline annotations
 
-baseline_beds_dir = config['paths']['baseline_annotations_dir']
+baseline_beds_dir = path("baseline_annotations_dir")
 baseline_files = [f for f in os.listdir(baseline_beds_dir) if not f.endswith('.unmapped.bed')]
 baseline_files_dict = [{'column_name': f.replace('.bed', ''), 'file_name': f} for f in baseline_files]
 baseline_df = merge_beds_baseline(annotation_df_variants_only, baseline_files_dict, baseline_beds_dir)

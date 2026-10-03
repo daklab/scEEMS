@@ -1,37 +1,32 @@
 """
-Create a deduplicated variant list across all cohorts for a given chromosome.
-
-Reads PIP_all parquet files from all cohorts and produces a unique variant list
-per chromosome for downstream annotation.
+List the unique variants of one chromosome over the fine-mapping results of all eQTL analyses: the
+variants step 2 annotates.
 
 Usage:
-    python create_unique_variant_list.py <chromosome_number>
+    python create_unique_variant_list.py <chromosome_number>        (1-22)
 
-Arguments:
-    chromosome_number: Integer chromosome number (1-22)
-
-Requires config.yaml with paths.data_dir set.
+Input:   {susie_dir}/<analysis>/PIP_all_parquet/PIP_all.parquet (create_parquet_files.py)
+Output:  {variant_list_dir}/variant_list_chr{N}.parquet
 """
 
 import os
 import sys
+
 from dask import dataframe as dd
 from dask.diagnostics import ProgressBar
-import yaml
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+from config import path
 
 ProgressBar().register()
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-
-data_directory = os.path.join(config['paths']['data_dir'], 'susie_vars_pips')
-variant_dir = os.path.join(data_directory, 'variant_list')
+data_directory = path("susie_dir")
+variant_dir = path("variant_list_dir")
 os.makedirs(variant_dir, exist_ok=True)
 
-# Get all subdirectory names (cohorts)
-subdirectories = [f.name for f in os.scandir(data_directory) if f.is_dir()]
-subdirectories = [x for x in subdirectories if x != 'variant_list']
+# One folder per eQTL analysis with a PIP_all parquet dataset; other folders (e.g. variant_list) are skipped
+subdirectories = [f.name for f in os.scandir(data_directory)
+                  if f.is_dir() and os.path.isdir(os.path.join(f.path, 'PIP_all_parquet', 'PIP_all.parquet'))]
 
 i = sys.argv[1]
 print(i)
@@ -41,7 +36,8 @@ for subdirectory in subdirectories:
     print(subdirectory)
     chromosome_val = f'chr{i}'
     parquet_file = f'{data_directory}/{subdirectory}/PIP_all_parquet/PIP_all.parquet'
-    df = dd.read_parquet(parquet_file, engine='pyarrow')
+    # read only this chromosome's partition (the dataset is partitioned by chr)
+    df = dd.read_parquet(parquet_file, engine='pyarrow', filters=[('chr', '==', chromosome_val)])
     df = df[df['chr'] == chromosome_val]
     df = df[['variant_id', 'chr', 'pos', 'ref', 'alt']].drop_duplicates()
     dfs.append(df)

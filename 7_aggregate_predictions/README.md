@@ -25,7 +25,8 @@ sbatch --export=ALL,cohort=Mic_mega_eQTL run_export.sh        # after run_aggreg
 ## Outputs
 
 - `{output_dir}/{cohort}/predictions_parquet/{model}/predictions.parquet/chr=chr{N}/`: columns
-  `variant_id, pos, ref, alt, pip, gene_id, pred_prob`, partitioned by `chr`. Steps 8-11 read these.
+  `variant_id, pos, ref, alt, pip, gene_id, pred_prob`, partitioned by `chr`. Steps 8 and 9 read these;
+  step 10 reads the per-gene tables of step 6.
 - `{output_dir}/release/predictions/{cohort}/predictions_{cohort}_{N}.tsv.gz` (+ `.tbi`): columns
   `#CHROM POS ID REF ALT GENE_ID PIP PRED_PROBABILITY`, `CHROM` without the `chr` prefix, sorted by
   position. These are the files of the `predictions/` folder of the data release.

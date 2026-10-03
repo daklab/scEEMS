@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Collect one model's per-gene prediction tables (step 6) into a single parquet dataset partitioned by
-chromosome, the input of steps 8-11 and of the TSV export (extract_predictions_tsv.py).
+chromosome, the input of steps 8 and 9 and of the TSV export (extract_predictions_tsv.py).
 
 usage:   python create_parquet_scored.py COHORT [MODEL]
          MODEL: weighted_full (default), unweighted_full or weighted_restricted
@@ -20,6 +20,7 @@ from config import cohort_name, path
 cohort = cohort_name(sys.argv[1])
 model = sys.argv[2] if len(sys.argv) > 2 else "weighted_full"
 assert model in ("weighted_full", "unweighted_full", "weighted_restricted"), f"unknown model {model}"
+os.makedirs(path("scratch_dir"), exist_ok=True)
 dask.config.set({"temporary_directory": path("scratch_dir")})
 
 src = f"{path('predictions_dir', cohort=cohort)}/{model}"

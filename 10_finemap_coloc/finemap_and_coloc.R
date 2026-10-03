@@ -265,7 +265,7 @@ if (!file.exists(gwas_cache_path)) {
   quit(save = "no", status = 0)
 }
 gwas_cache <- readRDS(gwas_cache_path)
-# the variants of the GWAS fit (saved with the fit; older caches only in the LD cache)
+# the variants the GWAS fit indexes (saved with the fit by precompute_gwas.R, else read from the LD cache)
 joined <- if (!is.null(gwas_cache$joined)) gwas_cache$joined else {
   if (!file.exists(ld_cache_path)) {
     message("LD cache missing for ", gene_id, ": ", ld_cache_path)

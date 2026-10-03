@@ -1,30 +1,29 @@
 """
-Generate a list of unique genes from downloaded SuSiE fine-mapping results.
+List the genes of the FunGen-xQTL SuSiE fine-mapping exports (one Fungen_xQTL.<gene_id>.cis_results_db.export.rds
+file per gene), the genes get_vars_pips.R processes.
 
-Parses filenames of downloaded RDS files to extract gene identifiers
-and saves a deduplicated gene list for downstream processing.
-
-Note:
-    This script expects internal raw RDS files under release_04_2024.
-    Those Step 1 raw inputs are not publicly distributed in this repository.
+The exports are not distributed with this repository or the data release; this step documents how the
+released training data were made.
 
 Usage:
     python create_job_list.py
 
-Requires config.yaml with paths.data_dir set.
+Input:   {finemapping_rds_dir}/Fungen_xQTL.<gene_id>.cis_results_db.export.rds
+Output:  {susie_dir}/genes_list.txt, one gene ID per line (sorted); a gene's line number is its index for
+         get_vars_pips.R
 """
 
 import os
+import sys
+
 import pandas as pd
-import yaml
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+from config import path
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-
-input_dir = os.path.join(config['paths']['data_dir'], 'release_04_2024')
-out_dir = os.path.dirname(os.path.abspath(__file__))
+input_dir = path("finemapping_rds_dir")
+out_dir = path("susie_dir")
+os.makedirs(out_dir, exist_ok=True)
 
 files = []
 for root, _, filenames in os.walk(input_dir):
@@ -34,8 +33,8 @@ for root, _, filenames in os.walk(input_dir):
 
 if not files:
     raise ValueError(
-        f"No fine-mapping RDS files found under {input_dir}. "
-        "Run download_data.py first and confirm Synapse data was downloaded."
+        f"No Fungen_xQTL.<gene_id>.cis_results_db.export.rds files under {input_dir} (finemapping_rds_dir). "
+        "These fine-mapping exports are not part of the data release."
     )
 
 genes = []
@@ -46,7 +45,7 @@ for filename in files:
 
 unique_genes = pd.Series(sorted(set(genes)))
 
-# Save unique genes to file
-unique_genes.to_csv(os.path.join(out_dir, 'genes_list.txt'), index=False, header=None)
+out_file = os.path.join(out_dir, 'genes_list.txt')
+unique_genes.to_csv(out_file, index=False, header=None)
 
-print(f"Found {len(unique_genes)} unique genes. Saved to genes_list.txt")
+print(f"Found {len(unique_genes)} unique genes. Saved to {out_file}")

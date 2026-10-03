@@ -53,7 +53,7 @@ The largest cell types need up to about 100 GB and a few hours for chromosome 1.
 
 - the `weighted_full` models and `feature_cols.pkl` of step 5
 - the `weighted_full` predictions of step 7 (`predictions_parquet/weighted_full/predictions.parquet`)
-- the per-gene `all_variants` tables of step 3
+- the per-gene `all_variants` tables of step 3, which are not part of the data release
 - `{aggregate_dir}/tau_star.json` from step 9
 
 ## Outputs

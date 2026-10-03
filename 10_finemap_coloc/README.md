@@ -1,13 +1,13 @@
 # Step 10: Fine-Mapping with scEEMS Priors and Colocalization with AD GWAS
 
-**This step needs controlled-access data.** It fine-maps eQTLs from individual-level ROSMAP genotypes
-and single-nucleus pseudobulk expression, available through the AD Knowledge Portal (Synapse) under a
-data use agreement, and computes GWAS LD from the ADSP whole-genome sequencing reference panel, available
-through NIAGADS. The code is provided so that the analysis can be reproduced by anyone with access to
-those data.
+**This step needs controlled-access data that are not part of the data release.** It fine-maps eQTLs from
+individual-level ROSMAP genotypes and single-nucleus pseudobulk expression, available through the AD
+Knowledge Portal (Synapse) under a data use agreement, and computes GWAS LD from the ADSP whole-genome
+sequencing reference panel, available through NIAGADS. The code documents how the released credible sets
+were made, and reproduces them for anyone with access to those data.
 
-**Its results are in the data release:** `fine_mapping/` holds the eQTL credible sets of all six cell
-types under the five priors (see its README). Most users should start from those files.
+**Use the data release instead:** `fine_mapping/` holds the eQTL credible sets of all six cell types under
+the five priors (see its README).
 
 ## Overview
 
@@ -30,7 +30,8 @@ set; scaled prior variance 0.2, prior and residual variances estimated; 95% cred
 Each eQTL fit is then colocalized (`coloc.susie`) with the AD GWAS of Bellenguez et al. (2022), fine-mapped
 over the same window with `susie_rss` on LD from the ADSP European reference panel, under two GWAS
 priors: `uniform` and `polyfun`, per-SNP heritabilities estimated by PolyFun from the GWAS and 83
-annotations (baseline-LF, microglia CRE, Roadmap E051 H3K27ac and two chromBPNet annotations). Variants are
+annotations (79 baseline-LF annotations, microglia CRE, Roadmap E051 H3K27ac, and two chromBPNet-based
+annotations of microglia and neuron CREs from the `chrombpnet_intersect_GPN` annotation set). Variants are
 matched across data sets by a canonical key (chromosome, position, alleles sorted).
 
 `coloc.susie` uses the Bayes factors of the fits, which the EMS re-weighting does not change, so EMS
@@ -44,7 +45,7 @@ which does respond to EMS.
 | `eqtl_data_dir` | ROSMAP eQTL data in the FunGen-xQTL layout: `genotype/ROSMAP_NIA_WGS.leftnorm.bcftools_qc.plink_qc.{N}.{bed,bim,fam}`; per cell type `{cell}/phenotype/` (region list, `phenotype_by_chrom/` expression BED files) and `{cell}/covariate/`; `reference/TADB_enhanced_cis.bed` (the cis window of each gene) |
 | `adsp_plink_dir` | ADSP European reference panel, `ADSP_EUR_chr{N}.{bed,bim,fam}` |
 | `gwas_sumstats_raw_file` | Bellenguez et al. (2022) stage 1, GWAS Catalog GCST90027158 (GRCh38) |
-| `ldsc_dir`, `sumstats_file`, `ldsc_annotation_dir` | PolyFun installation, LDSC-munged GWAS and annotation LD scores, for the PolyFun prior |
+| `ldsc_dir`, `sumstats_file`, `ldsc_annotation_dir` | PolyFun installation, LDSC-munged GWAS and, for the PolyFun prior, the 83 annotations with their LD scores: `{ldsc_annotation_dir}/{baseline_filtered/baseline,brain_all/brain_all,roadmap/roadmap,annotations_robust/chrombpnet_intersect_GPN/chrombpnet_intersect_GPN,weights/weights}_chr{N}.*` (inputs; not built by this repository) |
 | `ems_dir` | EMS tables `ems_top_{tissue}.tsv.bgz` (EMS release of Wang et al. 2021) |
 | `predictions_dir` | step 6 per-gene predictions of the three models |
 | `gene_mapping_file` | optional: `gene_id, gene_name, gene_TSS`, for gene names in `credset_all.tsv` |
@@ -91,7 +92,7 @@ sbatch run_aggregate.sh
 The job scripts run in the `scEEMS_R` environment (`environment_r.yml` and `install_r_packages.R` at the
 top of the repository: R 4.5.1, susieR 0.14.2, coloc 5.2.3, bigsnpr 1.12.21, pecotmr 0.3.16, htslib, and the
 Python packages of the helper scripts). PolyFun runs in its own environment (`POLYFUN_ENV`, default
-`polyfun`).
+`polyfun`), with `pyyaml` added (the scripts read `config.yaml`) and `bgzip`/`tabix` (htslib) on PATH.
 
 ## Outputs
 

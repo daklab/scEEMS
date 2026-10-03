@@ -1,7 +1,7 @@
-# R environment for the fine-mapping and colocalization steps (10_finemap_coloc, 11_crosscell_coloc),
-# with the versions used for the manuscript (R 4.5.1). It also carries the few Python packages those
-# steps' helper scripts need. Seven R packages are not available from conda at the versions used; after
-# creating the environment, install them with install_r_packages.R:
+# R environment for the pipeline's R scripts (1_process_datasets/get_vars_pips.R, 10_finemap_coloc,
+# 11_crosscell_coloc), with the versions used for the manuscript's fine-mapping (R 4.5.1). It also carries
+# the few Python packages the helper scripts of steps 10-11 need. Seven R packages are not available from
+# conda at the versions used; after creating the environment, install them with install_r_packages.R:
 #   conda env create -f environment_r.yml
 #   conda activate scEEMS_R
 #   R_LIBS_USER=NULL Rscript install_r_packages.R

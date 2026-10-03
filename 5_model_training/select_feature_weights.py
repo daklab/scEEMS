@@ -11,8 +11,9 @@ For each parity:
 
 usage:   python select_feature_weights.py [COHORT ...]            (default: all six cell types)
 output:  {feature_weight_search_dir}/best_configs_{cohort}.json, in the format of the data release's
-         model_training/feature_weights/ files. To train with your own selection, set
-         paths.feature_weights_file in config.yaml to "{output_dir}/{cohort}/feature_weight_search/best_configs_{cohort}.json".
+         model_training/feature_weights/ files. To train with your own selection, pass the file to
+         train_loco.py as its third argument, or set paths.feature_weights_file in config.yaml to
+         "{feature_weight_search_dir}/best_configs_{cohort}.json".
 """
 import json
 import os

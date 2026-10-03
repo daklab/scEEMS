@@ -1,20 +1,29 @@
 """
-Create training datasets with stratified positive/negative sampling.
+Build the training or test set of one cell type and chromosome: positive variant-gene pairs from the
+fine-mapping results and, for each positive, matched negatives from the same gene, with their features
+from step 3.
 
-Samples positive variants (high PIP) and negative variants (low PIP) from
-featurized gene datasets, stratified by variant type (SNP, insertion, deletion).
+Positives (PIP thresholds in data_params.yaml):
+    train             variants with PIP > 0.05 in a 95% credible set whose top variant has PIP > 0.10, and
+                      variants with PIP > 0.50 outside any credible set
+    train_restricted  variants with PIP > 0.90 in a 95% credible set (Weighted (Restricted) model)
+    test              variants with PIP >= 0.90
+Negatives: NPR per positive from the same gene, PIP < 0.01, same variant type (SNV, insertion, deletion),
+sampled with random_state 42 (with replacement when the gene has too few).
 
 Usage:
     python create_training_datasets.py <chr_num> <data_split> <cohort> <NPR>
 
 Arguments:
-    chr_num: Chromosome number (1-22)
-    data_split: "train", "test" or "train_restricted" (positives with PIP > 0.9 in a 95% credible
-                set; training data of the Weighted (Restricted) comparison model)
-    cohort: Cell type cohort (e.g., Mic_mega_eQTL)
-    NPR: Number of negative samples per positive variant
+    chr_num:    chromosome number (1-22)
+    data_split: train, train_restricted or test
+    cohort:     cell type, e.g. Mic_mega_eQTL (or Mic)
+    NPR:        number of negatives per positive (10 for the released data)
 
-Requires config.yaml and data_params.yaml.
+Inputs:  {susie_pips_dir}/PIP_top_parquet and PIP_all_parquet (step 1), the variant identifiers of step 2
+         ({variant_list_dir}/annotated_variants_just_variants), {all_variants_dir} (step 3)
+Output:  {training_sets_dir}/{data_split}_NPR_{NPR}_PIP_{positive}_{negative}/annotated_data_{cohort}_chr{N}.parquet;
+         nothing for a chromosome without positives (e.g. microglia chr21 for test and train_restricted)
 """
 
 import os
@@ -26,36 +35,31 @@ from tqdm import tqdm
 import yaml
 from dask.diagnostics import ProgressBar
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared"))
+from config import cohort_name, path
+
 ProgressBar().register()
 
 # Get command line arguments
 chr_num = sys.argv[1]
 data_split = sys.argv[2]
-cohort = sys.argv[3]
+cohort = cohort_name(sys.argv[3])
 NPR = int(sys.argv[4])
 
-# Load configuration
-with open('../config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-
-params_data = yaml.safe_load(open('data_params.yaml'))[data_split]
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_params.yaml')) as f:
+    params_data = yaml.safe_load(f)[data_split]
 pip_threshold_positive = params_data['positive_class_threshold']
 pip_threshold_negative = params_data['negative_class_threshold']
 
 # Define paths
-data_dir = config['paths']['data_dir']
-susie_dir = os.path.join(data_dir, 'susie_vars_pips')
-featurized_dir = os.path.join(data_dir, f'training_data/{cohort}/all_variants')
-top_parquet_dir = os.path.join(susie_dir, f'{cohort}/PIP_top_parquet')
-all_parquet_dir = os.path.join(susie_dir, f'{cohort}/PIP_all_parquet')
-output_dir = os.path.join(data_dir,
-    f'training_data/{cohort}/training_data/{data_split}_NPR_{NPR}_PIP_{pip_threshold_positive}_{pip_threshold_negative}')
-abc_data_dir = config['paths']['abc_data_dir']
+pips_dir = path("susie_pips_dir", cohort=cohort)
+featurized_dir = path("all_variants_dir", cohort=cohort)
+top_parquet_dir = f'{pips_dir}/PIP_top_parquet'
+all_parquet_dir = f'{pips_dir}/PIP_all_parquet'
+output_dir = os.path.join(path("training_sets_dir", cohort=cohort),
+    f'{data_split}_NPR_{NPR}_PIP_{pip_threshold_positive}_{pip_threshold_negative}')
 
 os.makedirs(output_dir, exist_ok=True)
-
-# Load gene TSS information
-gene_id_gene_name_df = pd.read_csv(f'{abc_data_dir}/ABC_gene_id_name_mapping.csv', sep=',')
 
 # Load data
 top_pip_df_initial = dd.read_parquet(f'{top_parquet_dir}/PIP_top.parquet', engine='pyarrow')
@@ -88,7 +92,7 @@ top_pip_df = top_pip_df[
 ][['variant_id', 'chr', 'pos', 'ref', 'alt', 'pip', 'gene_id']].reset_index(drop=True)
 
 # Load annotations
-annotation_path = os.path.join(susie_dir, 'variant_list/annotated_variants_just_variants')
+annotation_path = os.path.join(path("variant_list_dir"), 'annotated_variants_just_variants')
 annotation_file = f'{annotation_path}/annotated_just_variants_chr{chr_num}.parquet'
 annotation_df = dd.read_parquet(annotation_file, engine='pyarrow')
 

@@ -1,16 +1,12 @@
 """
-Step 1 data download status for public repository.
+Step 1 reads the FunGen-xQTL SuSiE fine-mapping exports, which are not distributed with this repository
+or the scEEMS data release. The step 1 scripts document how the released training data were made.
 
-This repository does not expose the raw fine-mapping RDS inputs used in Step 1.
-The Step 1 scripts are retained to document how public train/test parquet files were
-created internally, but these raw source files are not distributed.
-
-For public downloads, use:
-    python ../download_synapse_data.py --resource model_training
-    python ../download_synapse_data.py --resource predictions
+The data release, which steps 5-11 start from, is downloaded with the script at the top of the repository:
+    python ../download_synapse_data.py --resource model_training predictions fine_mapping
 """
 
 raise RuntimeError(
-    "Step 1 raw RDS inputs are not publicly available in this repository. "
-    "Use download_synapse_data.py to fetch public model_training/predictions data from Synapse."
+    "The step 1 fine-mapping exports are not publicly available. "
+    "Use download_synapse_data.py at the top of the repository to download the scEEMS data release."
 )

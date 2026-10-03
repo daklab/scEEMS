@@ -13,9 +13,10 @@
 #   sbatch --export=ALL,set=pip/Mic_mega_eQTL run_ldscores.sh
 #   sbatch --export=ALL,set=top5000/Mic_mega_eQTL run_ldscores.sh
 #   sbatch --export=ALL,set=cs/Mic_mega_eQTL run_ldscores.sh
-# The MHC region makes chromosome 6 the slowest task. Runs in the PolyFun environment.
+# The MHC region makes chromosome 6 the slowest task. Runs in the PolyFun environment (POLYFUN_ENV, default
+# polyfun).
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate polyfun
+conda activate "${POLYFUN_ENV:-polyfun}"
 cd "${SLURM_SUBMIT_DIR}"
 
 # compute_ldscores.py is multithreaded through BLAS: match the thread count to the allocation, or it

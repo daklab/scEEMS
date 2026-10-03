@@ -60,6 +60,9 @@ fd, tmp = tempfile.mkstemp(dir=MODELS, suffix=".pkl")         # atomic: 22 jobs 
 os.close(fd)
 with open(tmp, "wb") as fh:
     pickle.dump({"cols": cols, "abscols": abscols, "FEATS": FEATS}, fh)
+umask = os.umask(0)
+os.umask(umask)
+os.chmod(tmp, 0o666 & ~umask)                                  # mkstemp makes it readable by its owner only
 os.replace(tmp, f"{MODELS}/feature_cols.pkl")                  # inference reindexes to this exact order
 
 X, _, _, _ = F.build_X(df, aux["column_dict"], gpn, cols=cols, abscols=abscols)

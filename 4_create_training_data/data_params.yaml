@@ -1,3 +1,10 @@
+# PIP thresholds of create_training_datasets.py.
+#   positive_class_threshold
+#     train:            a 95% credible set qualifies when its top variant's PIP exceeds it; its members with
+#                       PIP > 0.05 are positives, as are variants with PIP > 0.50 outside any credible set
+#     train_restricted: positives have PIP above it and are in a 95% credible set
+#     test:             positives have PIP at or above it
+#   negative_class_threshold: negatives have PIP below it
 train:
   positive_class_threshold: 0.1
   negative_class_threshold: 0.01

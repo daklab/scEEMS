@@ -8,6 +8,8 @@ Per-SNP functional priors (SNPVAR) for the PolyFun GWAS prior of precompute_gwas
   chrombpnet_microglia-enhancer_promoter_union_atac_500-microglia_combined-zscore_2_GPN_pct_90
   chrombpnet_neuron-enhancer_promoter_union_atac_500-neuron_combined-zscore_2_GPN_pct_98
                                                                                  (chrombpnet_intersect_GPN)
+The last two are chromBPNet-based annotations of microglia and neuron CREs. All annotation and LD-score
+files are inputs (ldsc_annotation_dir); they are not built by this repository.
 The --anno order must match the LD-score columns, so each file's annotation names are read in file order
 and filtered to the selection.
 

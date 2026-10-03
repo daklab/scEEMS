@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # List the genes whose GWAS window is fine-mapped: every autosomal gene in any cell type's region list
-# that has a TADB cis window (the LD reference panel covers chromosomes 1-22). LD and GWAS fits depend only on the gene, so they are computed once per gene for all
-# cell types. Prints the number of genes, the SLURM array size of run_precompute_ld.sh and
-# run_precompute_gwas.sh.
+# that has a TADB cis window (the LD reference panel covers chromosomes 1-22). LD and GWAS fits depend
+# only on the gene, so they are computed once per gene for all cell types. Prints the number of genes,
+# the SLURM array size of run_precompute_ld.sh and run_precompute_gwas.sh.
 #
 # usage:   Rscript make_gene_list.R
 # output:  {finemap_dir}/genes.tsv  (gene_id, chr; no header)

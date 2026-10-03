@@ -94,6 +94,7 @@ Pooled held-out AUPRC of `weighted_full` from `evaluate_auprc.py`: astrocytes 0.
 ## Reproducing the feature-weight search
 
 ```bash
+cd 5_model_training
 sbatch --export=ALL,cohort=Mic_mega_eQTL run_search.sh     # odd and even, 83 trials each
 python select_feature_weights.py Mic_mega_eQTL
 sbatch --export=ALL,cohort=Mic_mega_eQTL,weights=<output_dir>/Mic_mega_eQTL/feature_weight_search/best_configs_Mic_mega_eQTL.json run_train.sh
